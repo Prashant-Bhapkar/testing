@@ -1,0 +1,10 @@
+pymupdf
+qdrant-client
+requests
+python-dotenv
+minio
+fastapi
+uvicorn
+python-multipart
+httpx
+python-docx

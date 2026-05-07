@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: #0d0f12;
+  color: #e8eaf6;
+  font-family: Arial, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2f45; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #5b7cfa; }
+
+/* Spinner animation */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 20px; height: 20px;
+  border: 2px solid #2a2f45;
+  border-top-color: #5b7cfa;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Pulse dot */
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Bounce dots for thinking */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+/* Modal box */
+.modal-box {
+  background: #151820;
+  border: 1px solid #2a2f45;
+  border-radius: 12px;
+  padding: 22px;
+  max-width: 90vw;
+}
+
+/* Input */
+.modal-input {
+  width: 100%;
+  background: #1c2030;
+  border: 1px solid #2a2f45;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #e8eaf6;
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 10px;
+  display: block;
+}
+.modal-input:focus { border-color: #5b7cfa; }
+
+/* Buttons */
+.btn-primary {
+  padding: 6px 16px;
+  background: #5b7cfa;
+  color: #fff;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #4a6cf7; }
+
+.btn-ghost {
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid #2a2f45;
+  color: #9ca3af;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: #1c2030; color: #e8eaf6; }
+
+/* Toast fade-in */
+@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-in { animation: fade-in 0.2s ease; }
