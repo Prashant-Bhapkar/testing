@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import { api } from '../../api'
 
 export default function FolderModal({ prefix, onClose, onSuccess, toast }) {
-  const [name, setName] = useState('')
+  const [name, setName]       = useState('')
   const [loading, setLoading] = useState(false)
 
   async function create() {
@@ -23,13 +23,13 @@ export default function FolderModal({ prefix, onClose, onSuccess, toast }) {
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal-box w-[360px]">
+      <div className="modal-box w-[380px]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[15px] font-bold">📁 Create New Folder</h2>
+          <h2 className="text-base font-bold">📁 Create New Folder</h2>
           <button onClick={onClose} className="text-muted hover:text-text"><X size={16} /></button>
         </div>
 
-        <label className="block text-[11px] text-subtle mb-1">Folder name</label>
+        <label className="block text-sm text-subtle mb-1.5">Folder name</label>
         <input
           autoFocus
           value={name}
@@ -39,13 +39,13 @@ export default function FolderModal({ prefix, onClose, onSuccess, toast }) {
           className="modal-input"
         />
 
-        <label className="block text-[11px] text-subtle mb-1">Inside path</label>
+        <label className="block text-sm text-subtle mb-1.5">Inside path</label>
         <input value={prefix || '(root)'} readOnly className="modal-input opacity-60" />
 
         <div className="flex gap-2 justify-end mt-4">
-          <button onClick={onClose} className="btn-ghost text-xs">Cancel</button>
-          <button onClick={create} disabled={loading} className="btn-primary text-xs">
-            {loading ? 'Creating…' : 'Create'}
+          <button onClick={onClose} className="btn-ghost">Cancel</button>
+          <button onClick={create} disabled={loading} className="btn-primary">
+            {loading ? 'Creating…' : 'Create Folder'}
           </button>
         </div>
       </div>

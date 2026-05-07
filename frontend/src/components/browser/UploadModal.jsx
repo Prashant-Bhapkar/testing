@@ -65,7 +65,7 @@ export default function UploadModal({ prefix, onClose, onSuccess, toast }) {
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal-box w-[440px]">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[15px] font-bold">Upload Files</h2>
+          <h2 className="text-base font-bold">Upload Files</h2>
           <button onClick={onClose} className="text-muted hover:text-text"><X size={16} /></button>
         </div>
 
@@ -79,12 +79,12 @@ export default function UploadModal({ prefix, onClose, onSuccess, toast }) {
             ${over ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/60'}`}
         >
           <div className="text-3xl mb-2">📂</div>
-          <div className="text-[13px] text-subtle">Click or drag & drop files here</div>
-          <div className="text-[11px] text-muted mt-1">PDF, TXT, MD, CSV, DOCX and more</div>
+          <div className="text-sm text-subtle">Click or drag & drop files here</div>
+          <div className="text-xs text-muted mt-1">PDF, TXT, MD, CSV, DOCX and more</div>
         </div>
         <input ref={inputRef} type="file" multiple className="hidden" onChange={e => addFiles(Array.from(e.target.files))} />
 
-        <div className="text-[11px] text-muted mb-1">Upload to: <span className="text-subtle">{prefix || '(root)'}</span></div>
+        <div className="text-xs text-muted mb-2">Upload to: <span className="text-subtle">{prefix || '(root)'}</span></div>
 
         {/* File list */}
         {files.length > 0 && (
@@ -115,16 +115,16 @@ export default function UploadModal({ prefix, onClose, onSuccess, toast }) {
           </div>
         )}
 
-        <div className="text-[10px] text-muted mb-3">
+        <div className="text-xs text-muted mb-3">
           🔄 = Embedding queued in background (PDF, TXT, MD, CSV, DOCX)
         </div>
 
         <div className="flex gap-2 justify-end">
-          <button onClick={onClose} className="btn-ghost text-xs">Cancel</button>
+          <button onClick={onClose} className="btn-ghost">Cancel</button>
           <button
             onClick={doUpload}
             disabled={files.length === 0 || uploading}
-            className="btn-primary text-xs disabled:opacity-40"
+            className="btn-primary disabled:opacity-40"
           >
             <Upload size={13} className="inline mr-1" />
             {uploading ? 'Uploading…' : 'Upload All'}

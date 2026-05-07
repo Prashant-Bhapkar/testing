@@ -1,17 +1,19 @@
 import { useState, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../api'
 import { useToast } from '../../context/ToastContext'
+import { ThemeToggle } from '../../context/ThemeContext'
 import MessageList from './MessageList'
 import InputArea from './InputArea'
-import { PlusCircle, Trash2, FolderOpen } from 'lucide-react'
+import { Trash2, FolderOpen, MessageSquare, PlusCircle } from 'lucide-react'
 
 export default function ChatPage() {
   const toast = useToast()
-  const [messages, setMessages]   = useState([])   // { role, content, sources?, time }
-  const [history, setHistory]     = useState([])   // API history (role + content only)
-  const [sessions, setSessions]   = useState([])
-  const [loading, setLoading]     = useState(false)
+  const location = useLocation()
+  const [messages, setMessages] = useState([])
+  const [history, setHistory]   = useState([])
+  const [sessions, setSessions] = useState([])
+  const [loading, setLoading]   = useState(false)
   const messagesEndRef = useRef(null)
 
   function scrollToBottom() {
@@ -43,25 +45,18 @@ export default function ChatPage() {
 
   const sendMessage = useCallback(async (question) => {
     if (!question.trim() || loading) return
-
     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    const userMsg = { role: 'user', content: question, time }
-    setMessages(prev => [...prev, userMsg])
-
-    const newHistory = [...history, { role: 'user', content: question }]
-    setHistory(newHistory)
+    setMessages(prev => [...prev, { role: 'user', content: question, time }])
+    setHistory(prev => [...prev, { role: 'user', content: question }])
     setLoading(true)
     setTimeout(scrollToBottom, 50)
-
     try {
       const data = await api.chat(question, history)
       const ansTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-      const assistantMsg = { role: 'assistant', content: data.answer, sources: data.sources, time: ansTime }
-      setMessages(prev => [...prev, assistantMsg])
+      setMessages(prev => [...prev, { role: 'assistant', content: data.answer, sources: data.sources, time: ansTime }])
       setHistory(prev => [...prev, { role: 'assistant', content: data.answer }])
     } catch (e) {
-      const errMsg = { role: 'assistant', content: `Sorry, I encountered an error: ${e.message}`, sources: [], time: '' }
-      setMessages(prev => [...prev, errMsg])
+      setMessages(prev => [...prev, { role: 'assistant', content: `Error: ${e.message}`, sources: [], time: '' }])
       toast(e.message, 'err')
     } finally {
       setLoading(false)
@@ -72,31 +67,46 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
       {/* Sidebar */}
-      <aside className="w-[260px] min-w-[260px] bg-surface border-r border-border flex flex-col">
-        <div className="p-4 border-b border-border">
-          <div className="text-base font-bold flex items-center gap-2">🧠 RAG Search</div>
-          <div className="text-[11px] text-muted mt-0.5">Ask questions about your documents</div>
+      <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
+        {/* App header */}
+        <div className="px-4 py-4 border-b border-border flex items-center justify-between">
+          <div>
+            <div className="text-base font-bold text-text">🗄️ RAG Bot</div>
+            <div className="text-xs text-muted mt-0.5">Document Intelligence</div>
+          </div>
+          <ThemeToggle />
+        </div>
+
+        {/* Feature nav */}
+        <div className="px-3 pt-3 pb-1">
+          <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
+          <FeatureLink to="/"     icon={<FolderOpen size={15} />}    label="RAG Docs"   desc="Browse & upload files" active={location.pathname === '/'} />
+          <FeatureLink to="/chat" icon={<MessageSquare size={15} />} label="RAG Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
+        </div>
+
+        {/* New chat */}
+        <div className="px-3 py-2 border-t border-border">
           <button
             onClick={newChat}
-            className="mt-3.5 w-full py-2 bg-primary text-white text-[13px] font-semibold rounded-lg hover:bg-primary/90 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:opacity-90 transition-opacity"
           >
-            + New Chat
+            <PlusCircle size={15} /> New Chat
           </button>
         </div>
 
-        <div className="px-4 pt-3 pb-1">
-          <div className="text-[10px] uppercase tracking-widest text-muted mb-2">Recent Chats</div>
+        {/* Recent chats */}
+        <div className="px-3 pt-2 pb-1">
+          <div className="text-[11px] uppercase tracking-widest text-muted mb-1.5">Recent Chats</div>
         </div>
-
-        <div className="flex-1 overflow-y-auto px-2 pb-3">
+        <div className="flex-1 overflow-y-auto px-2 pb-2">
           {sessions.length === 0 ? (
-            <div className="text-[11px] text-muted px-2">No previous chats</div>
+            <div className="text-xs text-muted px-2 py-1">No previous chats</div>
           ) : (
             sessions.map(s => (
               <button
                 key={s.id}
                 onClick={() => loadSession(s)}
-                className="w-full text-left px-2.5 py-2 rounded-md text-[12px] text-subtle hover:bg-card hover:text-text transition-colors truncate"
+                className="w-full text-left px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors truncate"
               >
                 💬 {s.title}
               </button>
@@ -104,15 +114,13 @@ export default function ChatPage() {
           )}
         </div>
 
-        <div className="p-2 border-t border-border">
-          <Link to="/" className="flex items-center gap-2 px-2.5 py-2 rounded-md text-[13px] text-subtle hover:bg-card hover:text-text transition-colors">
-            <FolderOpen size={14} /> File Browser
-          </Link>
+        {/* Bottom */}
+        <div className="px-2 py-2 border-t border-border">
           <button
             onClick={clearAll}
-            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md text-[13px] text-subtle hover:bg-card hover:text-text transition-colors"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors"
           >
-            <Trash2 size={14} /> Clear History
+            <Trash2 size={15} /> Clear History
           </button>
         </div>
       </aside>
@@ -120,16 +128,15 @@ export default function ChatPage() {
       {/* Main */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="h-[54px] border-b border-border flex items-center justify-between px-5 bg-surface shrink-0">
-          <div className="text-[15px] font-bold flex items-center gap-2">
-            🔍 Document Search
-            <span className="text-[10px] px-2 py-0.5 bg-card border border-border rounded-full text-purple">kgpt-reasoning-text</span>
+        <div className="h-14 border-b border-border flex items-center justify-between px-5 bg-surface shrink-0">
+          <div className="text-base font-bold flex items-center gap-2">
+            🔍 RAG Search
           </div>
-          <div className="text-[11px] text-muted">Searching across all uploaded documents</div>
+          <div className="text-sm text-muted">Searching across all uploaded documents</div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-5">
           {messages.length === 0 ? (
             <Welcome onSuggestion={sendMessage} />
           ) : (
@@ -146,6 +153,25 @@ export default function ChatPage() {
   )
 }
 
+function FeatureLink({ to, icon, label, desc, active }) {
+  return (
+    <Link
+      to={to}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1.5 transition-all ${
+        active
+          ? 'bg-primary/15 text-primary border border-primary/25'
+          : 'text-subtle hover:bg-card hover:text-text border border-transparent'
+      }`}
+    >
+      <span className="shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold leading-tight">{label}</div>
+        <div className={`text-xs leading-tight mt-0.5 ${active ? 'text-primary/70' : 'text-muted'}`}>{desc}</div>
+      </div>
+    </Link>
+  )
+}
+
 function Welcome({ onSuggestion }) {
   const suggestions = [
     '📋 What topics are covered in the uploaded documents?',
@@ -154,18 +180,18 @@ function Welcome({ onSuggestion }) {
     '📊 What are the main features described?',
   ]
   return (
-    <div className="flex flex-col items-center justify-center flex-1 gap-4 text-center px-10 py-10">
-      <div className="text-5xl">🧠</div>
-      <div className="text-[22px] font-bold">Ask anything about your documents</div>
+    <div className="flex flex-col items-center justify-center flex-1 gap-5 text-center px-10 py-10">
+      <div className="text-6xl">🧠</div>
+      <div className="text-2xl font-bold">Ask anything about your documents</div>
       <div className="text-sm text-muted max-w-md leading-relaxed">
-        Upload PDFs via the File Browser, then ask questions here. I'll search through all your documents and give you accurate answers with sources.
+        Upload files via RAG Docs, then ask questions here. I'll search through all your documents and give you accurate answers with sources.
       </div>
-      <div className="grid grid-cols-2 gap-2.5 mt-2 max-w-[560px]">
+      <div className="grid grid-cols-2 gap-3 mt-1 max-w-[580px]">
         {suggestions.map(s => (
           <button
             key={s}
             onClick={() => onSuggestion(s.slice(2).trim())}
-            className="px-4 py-3 bg-surface border border-border rounded-xl text-xs text-subtle text-left leading-relaxed hover:border-primary hover:text-text hover:bg-card transition-all"
+            className="px-4 py-3.5 bg-surface border border-border rounded-xl text-sm text-subtle text-left leading-relaxed hover:border-primary hover:text-text hover:bg-card transition-all"
           >
             {s}
           </button>

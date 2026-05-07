@@ -1,5 +1,3 @@
-import { Eye, Download, Trash2 } from 'lucide-react'
-
 const ICONS = {
   folder: '📁', pdf: '📄', doc: '📝', docx: '📝',
   xls: '📊', xlsx: '📊', ppt: '📋', pptx: '📋',
@@ -8,8 +6,6 @@ const ICONS = {
   txt: '📃', csv: '📃', json: '📃', xml: '📃', md: '📃',
   py: '🐍', js: '📜', html: '🌐',
 }
-
-const PREVIEW_EXTS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'txt', 'csv', 'md']
 
 export function getIcon(item) {
   if (item.type === 'folder') return '📁'
@@ -28,20 +24,14 @@ export function fmtDate(s) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function FileGrid({ items, onItemClick, onDelete, onPreview, viewMode = 'grid' }) {
+export default function FileGrid({ items, onItemClick, viewMode = 'grid' }) {
   if (viewMode === 'list') {
-    return <ListView items={items} onItemClick={onItemClick} onDelete={onDelete} onPreview={onPreview} />
+    return <ListView items={items} onItemClick={onItemClick} />
   }
   return (
-    <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))' }}>
+    <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
       {items.map((item) => (
-        <GridItem
-          key={item.path}
-          item={item}
-          onClick={() => onItemClick(item)}
-          onDelete={() => onDelete(item)}
-          onPreview={() => onPreview(item)}
-        />
+        <GridItem key={item.path} item={item} onClick={() => onItemClick(item)} />
       ))}
     </div>
   )
@@ -49,8 +39,7 @@ export default function FileGrid({ items, onItemClick, onDelete, onPreview, view
 
 // ── Grid view ──────────────────────────────────────────────────
 
-function GridItem({ item, onClick, onDelete, onPreview }) {
-  const canPreview = item.type === 'file' && PREVIEW_EXTS.includes(item.ext)
+function GridItem({ item, onClick }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
@@ -60,56 +49,32 @@ function GridItem({ item, onClick, onDelete, onPreview }) {
   return (
     <div
       onClick={onClick}
-      className="relative bg-surface border border-border rounded-xl p-3 cursor-pointer flex flex-col items-center gap-2 text-center hover:border-primary hover:-translate-y-0.5 transition-all group"
+      className="relative bg-surface border border-border rounded-xl p-4 cursor-pointer flex flex-col items-center gap-2 text-center hover:border-primary hover:-translate-y-0.5 transition-all"
     >
-      <span className={`absolute top-1.5 right-1.5 text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
+      <span className={`absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
         {item.type === 'folder' ? 'folder' : (item.ext || 'file')}
       </span>
-      <div className="text-3xl">{getIcon(item)}</div>
-      <div className="text-[11px] font-semibold break-all leading-tight line-clamp-2">{item.name}</div>
-      {item.type === 'file' && <div className="text-[10px] text-muted">{fmtSize(item.size)}</div>}
-      <div className="absolute inset-0 rounded-xl bg-bg/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-2 gap-1">
-        {canPreview && (
-          <ActionBtn icon={<Eye size={12} />} title="Preview" onClick={(e) => { e.stopPropagation(); onPreview() }} />
-        )}
-        {item.type === 'file' && (
-          <ActionBtn icon={<Download size={12} />} title="Download" onClick={(e) => { e.stopPropagation(); window.location.href = `/api/download?path=${encodeURIComponent(item.path)}` }} />
-        )}
-        <ActionBtn icon={<Trash2 size={12} />} title="Delete" danger onClick={(e) => { e.stopPropagation(); onDelete() }} />
-      </div>
+      <div className="text-4xl mt-1">{getIcon(item)}</div>
+      <div className="text-xs font-semibold break-all leading-snug line-clamp-2 mt-1">{item.name}</div>
+      {item.type === 'file' && <div className="text-xs text-muted">{fmtSize(item.size)}</div>}
     </div>
-  )
-}
-
-function ActionBtn({ icon, title, onClick, danger }) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      className={`w-7 h-7 rounded-md border flex items-center justify-center text-xs transition-colors
-        ${danger
-          ? 'bg-card border-border text-subtle hover:bg-danger hover:border-danger hover:text-white'
-          : 'bg-card border-border text-subtle hover:bg-primary hover:border-primary hover:text-white'}`}
-    >
-      {icon}
-    </button>
   )
 }
 
 // ── List view ──────────────────────────────────────────────────
 
-function ListView({ items, onItemClick, onDelete, onPreview }) {
+function ListView({ items, onItemClick }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
-      {/* Header */}
-      <div className="grid text-[10px] uppercase tracking-widest text-muted bg-card px-3 py-2 border-b border-border"
-        style={{ gridTemplateColumns: '2rem 1fr 5rem 6rem 7rem 5.5rem' }}>
+      <div
+        className="grid text-xs uppercase tracking-widest text-muted bg-card px-4 py-2.5 border-b border-border font-semibold"
+        style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 6.5rem 8rem' }}
+      >
         <span />
         <span>Name</span>
         <span>Type</span>
         <span className="text-right">Size</span>
         <span className="text-right">Modified</span>
-        <span className="text-right">Actions</span>
       </div>
 
       {items.map((item, idx) => (
@@ -118,16 +83,13 @@ function ListView({ items, onItemClick, onDelete, onPreview }) {
           item={item}
           isLast={idx === items.length - 1}
           onClick={() => onItemClick(item)}
-          onDelete={() => onDelete(item)}
-          onPreview={() => onPreview(item)}
         />
       ))}
     </div>
   )
 }
 
-function ListRow({ item, isLast, onClick, onDelete, onPreview }) {
-  const canPreview = item.type === 'file' && PREVIEW_EXTS.includes(item.ext)
+function ListRow({ item, isLast, onClick }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
@@ -137,35 +99,18 @@ function ListRow({ item, isLast, onClick, onDelete, onPreview }) {
   return (
     <div
       onClick={onClick}
-      className={`grid items-center px-3 py-2 cursor-pointer hover:bg-card transition-colors group
-        ${!isLast ? 'border-b border-border' : ''}`}
-      style={{ gridTemplateColumns: '2rem 1fr 5rem 6rem 7rem 5.5rem' }}
+      className={`grid items-center px-4 py-3 cursor-pointer hover:bg-card transition-colors ${!isLast ? 'border-b border-border' : ''}`}
+      style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 6.5rem 8rem' }}
     >
-      <span className="text-base">{getIcon(item)}</span>
-
-      <span className="text-[12px] font-medium truncate pr-2">{item.name}</span>
-
+      <span className="text-xl">{getIcon(item)}</span>
+      <span className="text-sm font-medium truncate pr-3">{item.name}</span>
       <span>
-        <span className={`text-[9px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
+        <span className={`text-[11px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
           {item.type === 'folder' ? 'folder' : (item.ext || 'file')}
         </span>
       </span>
-
-      <span className="text-[11px] text-muted text-right">
-        {item.type === 'file' ? fmtSize(item.size) : '—'}
-      </span>
-
-      <span className="text-[11px] text-muted text-right">{fmtDate(item.modified)}</span>
-
-      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {canPreview && (
-          <ActionBtn icon={<Eye size={11} />} title="Preview" onClick={(e) => { e.stopPropagation(); onPreview() }} />
-        )}
-        {item.type === 'file' && (
-          <ActionBtn icon={<Download size={11} />} title="Download" onClick={(e) => { e.stopPropagation(); window.location.href = `/api/download?path=${encodeURIComponent(item.path)}` }} />
-        )}
-        <ActionBtn icon={<Trash2 size={11} />} title="Delete" danger onClick={(e) => { e.stopPropagation(); onDelete() }} />
-      </div>
+      <span className="text-sm text-muted text-right">{item.type === 'file' ? fmtSize(item.size) : '—'}</span>
+      <span className="text-sm text-muted text-right">{fmtDate(item.modified)}</span>
     </div>
   )
 }

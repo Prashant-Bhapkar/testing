@@ -8,7 +8,7 @@ import UploadModal from './UploadModal'
 import FolderModal from './FolderModal'
 import ConfirmModal from './ConfirmModal'
 import PreviewModal from './PreviewModal'
-import { ChevronLeft, FolderPlus, Upload, LayoutGrid, List } from 'lucide-react'
+import { ChevronLeft, FolderPlus, Upload, LayoutGrid, List, Search } from 'lucide-react'
 
 export default function FileBrowser() {
   const toast = useToast()
@@ -20,18 +20,20 @@ export default function FileBrowser() {
   const [bucketInfo, setBucketInfo] = useState({ bucket: '…', root_items: '—' })
   const [selected, setSelected]   = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const [viewMode, setViewMode]       = useState('grid') // 'grid' | 'list'
+  const [viewMode, setViewMode]       = useState('grid')
   const [showUpload, setShowUpload]   = useState(false)
   const [showFolder, setShowFolder]   = useState(false)
-  const [confirmState, setConfirmState] = useState(null) // { message, onConfirm }
-  const [previewState, setPreviewState] = useState(null) // { path, name }
+  const [confirmState, setConfirmState] = useState(null)
+  const [previewState, setPreviewState] = useState(null)
 
   const loadContent = useCallback(async (p = prefix) => {
     setLoading(true)
     try {
       const data = await api.browse(p)
       setItems(data.items)
+      setSearchQuery('')
     } catch (e) {
       toast(e.message, 'err')
     } finally {
@@ -72,13 +74,10 @@ export default function FileBrowser() {
     toast('Refreshed', 'info')
   }
 
+  // Both files AND folders open detail panel on click
   function handleItemClick(item) {
-    if (item.type === 'folder') {
-      navigateTo(item.path)
-    } else {
-      setSelected(item)
-      setDetailOpen(true)
-    }
+    setSelected(item)
+    setDetailOpen(true)
   }
 
   function confirmDelete(item) {
@@ -91,7 +90,7 @@ export default function FileBrowser() {
         try {
           if (isFolder) {
             const r = await api.deleteFolder(item.path)
-            toast(`Folder deleted — ${r.files_deleted} files removed`, 'ok')
+            toast(`Folder deleted — ${r.files_deleted} file(s) removed`, 'ok')
           } else {
             await api.deleteFile(item.path)
             toast('Deleted!', 'ok')
@@ -105,8 +104,12 @@ export default function FileBrowser() {
     })
   }
 
-  // Path breadcrumb parts
   const pathParts = prefix ? prefix.split('/').filter(Boolean) : []
+
+  // Client-side filter
+  const visibleItems = searchQuery.trim()
+    ? items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : items
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -122,17 +125,17 @@ export default function FileBrowser() {
 
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Topbar */}
-        <div className="h-13 flex items-center gap-2 px-3.5 border-b border-border bg-surface shrink-0">
+        <div className="h-14 flex items-center gap-2 px-4 border-b border-border bg-surface shrink-0">
           <button
             onClick={goBack}
             disabled={history.length === 0}
-            className="w-8 h-8 rounded-md bg-card border border-border text-subtle flex items-center justify-center disabled:opacity-30 hover:text-text transition-colors"
+            className="w-9 h-9 rounded-lg bg-card border border-border text-subtle flex items-center justify-center disabled:opacity-30 hover:text-text transition-colors"
           >
-            <ChevronLeft size={15} />
+            <ChevronLeft size={16} />
           </button>
 
           {/* Breadcrumb */}
-          <div className="flex-1 bg-card border border-border rounded-md px-3 py-1.5 text-xs text-subtle flex items-center gap-1 min-w-0">
+          <div className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm text-subtle flex items-center gap-1 min-w-0">
             <span>🪣</span>
             <button onClick={() => navigateTo('')} className="text-primary hover:underline shrink-0">root</button>
             {pathParts.map((part, i) => {
@@ -150,29 +153,51 @@ export default function FileBrowser() {
           </div>
 
           {/* View toggle */}
-          <div className="flex bg-card border border-border rounded-md overflow-hidden">
+          <div className="flex bg-card border border-border rounded-lg overflow-hidden">
             <button
               onClick={() => setViewMode('grid')}
               title="Grid view"
-              className={`px-2 py-1.5 transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-muted hover:text-text'}`}
+              className={`px-2.5 py-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-white' : 'text-muted hover:text-text'}`}
             >
-              <LayoutGrid size={13} />
+              <LayoutGrid size={14} />
             </button>
             <button
               onClick={() => setViewMode('list')}
               title="List view"
-              className={`px-2 py-1.5 transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted hover:text-text'}`}
+              className={`px-2.5 py-2 transition-colors ${viewMode === 'list' ? 'bg-primary text-white' : 'text-muted hover:text-text'}`}
             >
-              <List size={13} />
+              <List size={14} />
             </button>
           </div>
 
-          <button onClick={() => setShowFolder(true)} className="btn-ghost flex items-center gap-1.5 text-xs">
-            <FolderPlus size={14} /> New Folder
+          <button onClick={() => setShowFolder(true)} className="btn-ghost flex items-center gap-1.5 text-sm">
+            <FolderPlus size={15} /> New Folder
           </button>
-          <button onClick={() => setShowUpload(true)} className="btn-primary flex items-center gap-1.5 text-xs">
-            <Upload size={14} /> Upload
+          <button onClick={() => setShowUpload(true)} className="btn-primary flex items-center gap-1.5 text-sm">
+            <Upload size={15} /> Upload
           </button>
+        </div>
+
+        {/* Search bar */}
+        <div className="px-4 py-2.5 border-b border-border bg-surface shrink-0">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-2">
+            <Search size={14} className="text-muted shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search files and folders in this directory…"
+              className="flex-1 bg-transparent text-sm text-text placeholder:text-muted outline-none"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-xs text-muted hover:text-text px-1">✕</button>
+            )}
+          </div>
+          {searchQuery && (
+            <div className="text-xs text-muted mt-1.5 px-1">
+              {visibleItems.length} of {items.length} items match
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -182,17 +207,15 @@ export default function FileBrowser() {
               <div className="spinner" />
               <span className="text-sm">Loading…</span>
             </div>
-          ) : items.length === 0 ? (
+          ) : visibleItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted">
-              <span className="text-4xl opacity-40">📭</span>
-              <span className="text-sm">This folder is empty</span>
+              <span className="text-4xl opacity-40">{searchQuery ? '🔍' : '📭'}</span>
+              <span className="text-sm">{searchQuery ? 'No matches found' : 'This folder is empty'}</span>
             </div>
           ) : (
             <FileGrid
-              items={items}
+              items={visibleItems}
               onItemClick={handleItemClick}
-              onDelete={confirmDelete}
-              onPreview={(item) => setPreviewState({ path: item.path, name: item.name })}
               viewMode={viewMode}
             />
           )}
@@ -205,11 +228,11 @@ export default function FileBrowser() {
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         onDelete={confirmDelete}
+        onNavigate={(item) => { setDetailOpen(false); navigateTo(item.path) }}
         onPreview={(item) => setPreviewState({ path: item.path, name: item.name })}
         toast={toast}
       />
 
-      {/* Modals */}
       {showUpload && (
         <UploadModal
           prefix={prefix}

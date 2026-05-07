@@ -47,8 +47,8 @@ export default function InputArea({ onSend, loading }) {
             <Send size={15} />
           </button>
         </div>
-        <div className="text-center text-[11px] text-muted mt-2">
-          Press Enter to send · Shift+Enter for new line · Answers are based only on uploaded documents
+        <div className="text-center text-xs text-muted mt-2">
+          Enter to send · Shift+Enter for new line · Answers are based only on uploaded documents
         </div>
       </div>
     </div>
