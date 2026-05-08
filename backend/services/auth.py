@@ -1,22 +1,21 @@
 import logging
+import bcrypt
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from passlib.context import CryptContext
 from jose import jwt, JWTError
 from config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
 
 logger = logging.getLogger(__name__)
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer()
 
 
 def hash_password(password: str) -> str:
-    return pwd_ctx.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_ctx.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 def create_token(username: str, role: str) -> str:
