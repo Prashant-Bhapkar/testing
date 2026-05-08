@@ -24,14 +24,14 @@ export function fmtDate(s) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function FileGrid({ items, onItemClick, onContextMenu, viewMode = 'grid' }) {
+export default function FileGrid({ items, onItemClick, onContextMenu, viewMode = 'grid', showPath = false }) {
   function handleRightClick(e, item) {
     e.preventDefault()
     onContextMenu?.({ item, x: e.clientX, y: e.clientY })
   }
 
   if (viewMode === 'list') {
-    return <ListView items={items} onItemClick={onItemClick} onRightClick={handleRightClick} />
+    return <ListView items={items} onItemClick={onItemClick} onRightClick={handleRightClick} showPath={showPath} />
   }
   return (
     <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
@@ -41,6 +41,7 @@ export default function FileGrid({ items, onItemClick, onContextMenu, viewMode =
           item={item}
           onClick={() => onItemClick(item)}
           onRightClick={(e) => handleRightClick(e, item)}
+          showPath={showPath}
         />
       ))}
     </div>
@@ -49,12 +50,16 @@ export default function FileGrid({ items, onItemClick, onContextMenu, viewMode =
 
 // ── Grid view ──────────────────────────────────────────────────
 
-function GridItem({ item, onClick, onRightClick }) {
+function GridItem({ item, onClick, onRightClick, showPath }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
       ? 'bg-danger/20 text-danger'
       : 'bg-success/20 text-success'
+
+  const parentFolder = showPath && item.path && item.path.includes('/')
+    ? item.path.substring(0, item.path.lastIndexOf('/'))
+    : null
 
   return (
     <div
@@ -67,6 +72,9 @@ function GridItem({ item, onClick, onRightClick }) {
       </span>
       <div className="text-4xl mt-1">{getIcon(item)}</div>
       <div className="text-xs font-semibold break-all leading-snug line-clamp-2 mt-1">{item.name}</div>
+      {parentFolder && (
+        <div className="text-[10px] text-primary/70 truncate w-full text-center">📂 {parentFolder}</div>
+      )}
       {item.type === 'file' && <div className="text-xs text-muted">{fmtSize(item.size)}</div>}
       {item.uploaded_by && (
         <div className="text-[10px] text-muted truncate w-full text-center">by {item.uploaded_by}</div>
@@ -77,7 +85,7 @@ function GridItem({ item, onClick, onRightClick }) {
 
 // ── List view ──────────────────────────────────────────────────
 
-function ListView({ items, onItemClick, onRightClick }) {
+function ListView({ items, onItemClick, onRightClick, showPath }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <div
@@ -99,18 +107,23 @@ function ListView({ items, onItemClick, onRightClick }) {
           isLast={idx === items.length - 1}
           onClick={() => onItemClick(item)}
           onRightClick={(e) => onRightClick(e, item)}
+          showPath={showPath}
         />
       ))}
     </div>
   )
 }
 
-function ListRow({ item, isLast, onClick, onRightClick }) {
+function ListRow({ item, isLast, onClick, onRightClick, showPath }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
       ? 'bg-danger/20 text-danger'
       : 'bg-success/20 text-success'
+
+  const parentFolder = showPath && item.path && item.path.includes('/')
+    ? item.path.substring(0, item.path.lastIndexOf('/'))
+    : null
 
   return (
     <div
@@ -120,7 +133,12 @@ function ListRow({ item, isLast, onClick, onRightClick }) {
       style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 5.5rem 7.5rem 6rem' }}
     >
       <span className="text-xl">{getIcon(item)}</span>
-      <span className="text-sm font-medium truncate pr-3">{item.name}</span>
+      <span className="pr-3 min-w-0">
+        <span className="text-sm font-medium block truncate">{item.name}</span>
+        {parentFolder && (
+          <span className="text-[10px] text-primary/70 block truncate">📂 {parentFolder}</span>
+        )}
+      </span>
       <span>
         <span className={`text-[11px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
           {item.type === 'folder' ? 'folder' : (item.ext || 'file')}

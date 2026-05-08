@@ -215,7 +215,7 @@ export default function FileBrowser() {
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search files and folders in this directory…"
+              placeholder="Search all files across all folders…"
               className="flex-1 bg-transparent text-sm text-text placeholder:text-muted outline-none"
             />
             {searchQuery && (
@@ -251,6 +251,7 @@ export default function FileBrowser() {
               onItemClick={handleItemClick}
               onContextMenu={handleContextMenu}
               viewMode={viewMode}
+              showPath={deepSearchResults !== null}
             />
           )}
         </div>

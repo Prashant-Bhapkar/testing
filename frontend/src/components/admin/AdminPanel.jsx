@@ -67,7 +67,7 @@ function AdminSidebar() {
   const { user, logout } = useAuth()
 
   return (
-    <aside className="w-[220px] min-w-[220px] bg-surface border-r border-border flex flex-col">
+    <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
         <span className="text-sm font-bold text-text">🧠 AppEngg</span>
         <ThemeToggle />
@@ -75,14 +75,14 @@ function AdminSidebar() {
 
       <div className="px-3 pt-3 pb-1">
         <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
-        <SideLink to="/"      icon={<FolderOpen size={14} />}   label="Docs"   active={location.pathname === '/'} />
-        <SideLink to="/chat"  icon={<MessageSquare size={14} />} label="Search" active={location.pathname === '/chat'} />
-        <SideLink to="/admin" icon={<ShieldCheck size={14} />}   label="Admin"  active={location.pathname === '/admin'} />
+        <SideLink to="/"      icon={<FolderOpen size={15} />}    label="Docs"   desc="Browse & manage files" active={location.pathname === '/'} />
+        <SideLink to="/chat"  icon={<MessageSquare size={15} />} label="Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
+        <SideLink to="/admin" icon={<ShieldCheck size={15} />}   label="Admin"  desc="Logs, health & config"  active={location.pathname === '/admin'} />
       </div>
 
       <div className="mt-auto px-3 py-3 border-t border-border">
         <div className="flex items-center gap-2 px-2 py-1 mb-1">
-          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">
+          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
             {user?.username?.[0]?.toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -92,27 +92,30 @@ function AdminSidebar() {
         </div>
         <button
           onClick={logout}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-subtle hover:bg-card hover:text-danger transition-colors"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors"
         >
-          <LogOut size={14} /> Sign Out
+          <LogOut size={15} /> Sign Out
         </button>
       </div>
     </aside>
   )
 }
 
-function SideLink({ to, icon, label, active }) {
+function SideLink({ to, icon, label, desc, active }) {
   return (
     <Link
       to={to}
-      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg mb-1 transition-all ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1.5 transition-all ${
         active
           ? 'bg-primary/15 text-primary border border-primary/25'
           : 'text-subtle hover:bg-card hover:text-text border border-transparent'
       }`}
     >
-      {icon}
-      <span className="text-sm font-medium">{label}</span>
+      <span className="shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="text-sm font-semibold leading-tight">{label}</div>
+        <div className={`text-xs leading-tight mt-0.5 ${active ? 'text-primary/70' : 'text-muted'}`}>{desc}</div>
+      </div>
     </Link>
   )
 }

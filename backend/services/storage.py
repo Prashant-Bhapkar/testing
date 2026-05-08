@@ -73,7 +73,7 @@ def list_objects_recursive(prefix: str):
 
 def delete_folder_all(prefix: str) -> list:
     """Delete all objects under prefix. Returns list of deleted object names.
-    Handles empty folders by explicitly attempting .keep placeholder deletion."""
+    Handles empty folders created by our app (.keep) and by MinIO console (folder/ marker)."""
     client = get_minio()
     prefix_slash = prefix if prefix.endswith("/") else prefix + "/"
     objects = list(client.list_objects(MINIO_BUCKET, prefix=prefix_slash, recursive=True))
@@ -81,14 +81,16 @@ def delete_folder_all(prefix: str) -> list:
     for obj in objects:
         client.remove_object(MINIO_BUCKET, obj.object_name)
         deleted.append(obj.object_name)
-    # Explicit fallback for the .keep placeholder in case recursive listing missed it
-    keep_path = prefix_slash + ".keep"
-    if keep_path not in deleted:
-        try:
-            client.remove_object(MINIO_BUCKET, keep_path)
-            deleted.append(keep_path)
-        except Exception:
-            pass
+    # Explicitly delete known empty-folder markers in case recursive listing missed them.
+    # .keep  — created by our app's create-folder endpoint
+    # prefix_slash — zero-byte directory marker created by MinIO console
+    for marker in (prefix_slash + ".keep", prefix_slash):
+        if marker not in deleted:
+            try:
+                client.remove_object(MINIO_BUCKET, marker)
+                deleted.append(marker)
+            except Exception:
+                pass
     return deleted
 
 
