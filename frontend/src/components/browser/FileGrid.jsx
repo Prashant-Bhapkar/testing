@@ -24,14 +24,24 @@ export function fmtDate(s) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-export default function FileGrid({ items, onItemClick, viewMode = 'grid' }) {
+export default function FileGrid({ items, onItemClick, onContextMenu, viewMode = 'grid' }) {
+  function handleRightClick(e, item) {
+    e.preventDefault()
+    onContextMenu?.({ item, x: e.clientX, y: e.clientY })
+  }
+
   if (viewMode === 'list') {
-    return <ListView items={items} onItemClick={onItemClick} />
+    return <ListView items={items} onItemClick={onItemClick} onRightClick={handleRightClick} />
   }
   return (
     <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
       {items.map((item) => (
-        <GridItem key={item.path} item={item} onClick={() => onItemClick(item)} />
+        <GridItem
+          key={item.path}
+          item={item}
+          onClick={() => onItemClick(item)}
+          onRightClick={(e) => handleRightClick(e, item)}
+        />
       ))}
     </div>
   )
@@ -39,7 +49,7 @@ export default function FileGrid({ items, onItemClick, viewMode = 'grid' }) {
 
 // ── Grid view ──────────────────────────────────────────────────
 
-function GridItem({ item, onClick }) {
+function GridItem({ item, onClick, onRightClick }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
@@ -49,6 +59,7 @@ function GridItem({ item, onClick }) {
   return (
     <div
       onClick={onClick}
+      onContextMenu={onRightClick}
       className="relative bg-surface border border-border rounded-xl p-4 cursor-pointer flex flex-col items-center gap-2 text-center hover:border-primary hover:-translate-y-0.5 transition-all"
     >
       <span className={`absolute top-2 right-2 text-[10px] px-1.5 py-0.5 rounded uppercase font-semibold ${badgeClass}`}>
@@ -63,7 +74,7 @@ function GridItem({ item, onClick }) {
 
 // ── List view ──────────────────────────────────────────────────
 
-function ListView({ items, onItemClick }) {
+function ListView({ items, onItemClick, onRightClick }) {
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <div
@@ -83,13 +94,14 @@ function ListView({ items, onItemClick }) {
           item={item}
           isLast={idx === items.length - 1}
           onClick={() => onItemClick(item)}
+          onRightClick={(e) => onRightClick(e, item)}
         />
       ))}
     </div>
   )
 }
 
-function ListRow({ item, isLast, onClick }) {
+function ListRow({ item, isLast, onClick, onRightClick }) {
   const badgeClass = item.type === 'folder'
     ? 'bg-purple/20 text-purple'
     : item.ext === 'pdf'
@@ -99,6 +111,7 @@ function ListRow({ item, isLast, onClick }) {
   return (
     <div
       onClick={onClick}
+      onContextMenu={onRightClick}
       className={`grid items-center px-4 py-3 cursor-pointer hover:bg-card transition-colors ${!isLast ? 'border-b border-border' : ''}`}
       style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 6.5rem 8rem' }}
     >

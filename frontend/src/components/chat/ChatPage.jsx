@@ -69,19 +69,16 @@ export default function ChatPage() {
       {/* Sidebar */}
       <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
         {/* App header */}
-        <div className="px-4 py-4 border-b border-border flex items-center justify-between">
-          <div>
-            <div className="text-base font-bold text-text">🗄️ RAG Bot</div>
-            <div className="text-xs text-muted mt-0.5">Document Intelligence</div>
-          </div>
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <span className="text-sm font-bold text-text">🧠 DocIQ</span>
           <ThemeToggle />
         </div>
 
         {/* Feature nav */}
         <div className="px-3 pt-3 pb-1">
           <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
-          <FeatureLink to="/"     icon={<FolderOpen size={15} />}    label="RAG Docs"   desc="Browse & upload files" active={location.pathname === '/'} />
-          <FeatureLink to="/chat" icon={<MessageSquare size={15} />} label="RAG Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
+          <FeatureLink to="/"     icon={<FolderOpen size={15} />}    label="Docs"   desc="Browse & manage files" active={location.pathname === '/'} />
+          <FeatureLink to="/chat" icon={<MessageSquare size={15} />} label="Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
         </div>
 
         {/* New chat */}
@@ -130,7 +127,7 @@ export default function ChatPage() {
         {/* Header */}
         <div className="h-14 border-b border-border flex items-center justify-between px-5 bg-surface shrink-0">
           <div className="text-base font-bold flex items-center gap-2">
-            🔍 RAG Search
+            🔍 Search
           </div>
           <div className="text-sm text-muted">Searching across all uploaded documents</div>
         </div>
@@ -184,7 +181,7 @@ function Welcome({ onSuggestion }) {
       <div className="text-6xl">🧠</div>
       <div className="text-2xl font-bold">Ask anything about your documents</div>
       <div className="text-sm text-muted max-w-md leading-relaxed">
-        Upload files via RAG Docs, then ask questions here. I'll search through all your documents and give you accurate answers with sources.
+        Upload files via Docs, then ask questions here. I'll search through all your documents and give you accurate answers with sources.
       </div>
       <div className="grid grid-cols-2 gap-3 mt-1 max-w-[580px]">
         {suggestions.map(s => (

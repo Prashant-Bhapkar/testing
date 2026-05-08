@@ -1,9 +1,12 @@
 import uuid
+import logging
 import requests
 import fitz  # PyMuPDF
 from pathlib import Path
 from io import BytesIO
 from qdrant_client import QdrantClient
+
+logger = logging.getLogger(__name__)
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from config import (
     QDRANT_URL, AI_API_KEY, EMBEDDING_MODEL, EMBEDDING_URL,
@@ -141,19 +144,24 @@ def delete_embeddings_for_file(filename: str):
             json={"filter": {"must": [{"key": "source", "match": {"value": filename}}]}},
             verify=False, timeout=15,
         )
+        logger.info("Deleted embeddings for '%s'", filename)
     except Exception as e:
-        print(f"Could not delete embeddings for '{filename}': {e}")
+        logger.error("Could not delete embeddings for '%s': %s", filename, e)
 
 
 def embed_document(file_bytes: bytes, object_name: str) -> dict:
     filename = Path(object_name).name
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
+    logger.info("Embedding start: '%s'  ext=%s  bytes=%d", filename, ext, len(file_bytes))
+
     existing = count_embeddings_for_file(filename)
     if existing > 0:
+        logger.info("Replacing %d existing chunks for '%s'", existing, filename)
         delete_embeddings_for_file(filename)
 
     pages = extract_text(file_bytes, ext)
+    logger.info("Extracted %d page(s) from '%s'", len(pages), filename)
 
     points = []
     chunk_index = 0
@@ -177,11 +185,13 @@ def embed_document(file_bytes: bytes, object_name: str) -> dict:
             chunk_index += 1
 
     if not points:
+        logger.warning("No text extracted from '%s' — skipping", filename)
         return {"status": "skipped", "reason": "No text extracted"}
 
     qdrant = get_qdrant()
     ensure_collection(qdrant)
     qdrant.upsert(collection_name=COLLECTION_NAME, points=points)
+    logger.info("Embedded '%s'  chunks=%d  replaced_old=%s", filename, len(points), existing > 0)
     return {"status": "embedded", "filename": filename,
             "chunks": len(points), "replaced_old": existing > 0}
 

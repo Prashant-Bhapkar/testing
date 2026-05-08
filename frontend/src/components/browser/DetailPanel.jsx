@@ -1,5 +1,5 @@
 import { X, Download, Eye, Copy, Trash2, Brain, RefreshCw, FolderOpen } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { api } from '../../api'
 import { getIcon, fmtSize, fmtDate } from './FileGrid'
 
@@ -10,6 +10,12 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
   const [embStatus, setEmbStatus]     = useState(null)
   const [checking, setChecking]       = useState(false)
   const [reEmbedding, setReEmbedding] = useState(false)
+
+  useEffect(() => {
+    setEmbStatus(null)
+    setChecking(false)
+    setReEmbedding(false)
+  }, [item?.path])
 
   async function checkEmbedding() {
     setChecking(true)

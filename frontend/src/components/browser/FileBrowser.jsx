@@ -8,7 +8,7 @@ import UploadModal from './UploadModal'
 import FolderModal from './FolderModal'
 import ConfirmModal from './ConfirmModal'
 import PreviewModal from './PreviewModal'
-import { ChevronLeft, FolderPlus, Upload, LayoutGrid, List, Search } from 'lucide-react'
+import { ChevronLeft, FolderPlus, Upload, LayoutGrid, List, Search, Eye, Trash2, FolderOpen } from 'lucide-react'
 
 export default function FileBrowser() {
   const toast = useToast()
@@ -27,6 +27,7 @@ export default function FileBrowser() {
   const [showFolder, setShowFolder]   = useState(false)
   const [confirmState, setConfirmState] = useState(null)
   const [previewState, setPreviewState] = useState(null)
+  const [ctxMenu, setCtxMenu]         = useState(null)
 
   const loadContent = useCallback(async (p = prefix) => {
     setLoading(true)
@@ -74,10 +75,18 @@ export default function FileBrowser() {
     toast('Refreshed', 'info')
   }
 
-  // Both files AND folders open detail panel on click
+  // Folders navigate in; files open detail panel
   function handleItemClick(item) {
-    setSelected(item)
-    setDetailOpen(true)
+    if (item.type === 'folder') {
+      navigateTo(item.path)
+    } else {
+      setSelected(item)
+      setDetailOpen(true)
+    }
+  }
+
+  function handleContextMenu({ item, x, y }) {
+    setCtxMenu({ item, x, y })
   }
 
   function confirmDelete(item) {
@@ -115,8 +124,6 @@ export default function FileBrowser() {
     <div className="flex h-screen overflow-hidden bg-bg">
       <Sidebar
         bucket={bucketInfo.bucket}
-        rootItems={bucketInfo.root_items}
-        currentItems={items.length}
         onRoot={() => navigateTo('')}
         onUpload={() => setShowUpload(true)}
         onNewFolder={() => setShowFolder(true)}
@@ -216,6 +223,7 @@ export default function FileBrowser() {
             <FileGrid
               items={visibleItems}
               onItemClick={handleItemClick}
+              onContextMenu={handleContextMenu}
               viewMode={viewMode}
             />
           )}
@@ -263,6 +271,53 @@ export default function FileBrowser() {
           onClose={() => setPreviewState(null)}
         />
       )}
+
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCtxMenu(null)} />
+          <div
+            className="fixed z-50 bg-surface border border-border rounded-lg shadow-xl py-1.5 min-w-[160px]"
+            style={{
+              left: Math.min(ctxMenu.x, window.innerWidth - 180),
+              top: Math.min(ctxMenu.y, window.innerHeight - 120),
+            }}
+          >
+            {ctxMenu.item.type === 'folder' && (
+              <CtxItem
+                icon={<FolderOpen size={13} />}
+                label="Open Folder"
+                onClick={() => { navigateTo(ctxMenu.item.path); setCtxMenu(null) }}
+              />
+            )}
+            {ctxMenu.item.type === 'file' && (
+              <CtxItem
+                icon={<Eye size={13} />}
+                label="View Details"
+                onClick={() => { setSelected(ctxMenu.item); setDetailOpen(true); setCtxMenu(null) }}
+              />
+            )}
+            <CtxItem
+              icon={<Trash2 size={13} />}
+              label="Delete"
+              danger
+              onClick={() => { confirmDelete(ctxMenu.item); setCtxMenu(null) }}
+            />
+          </div>
+        </>
+      )}
     </div>
+  )
+}
+
+function CtxItem({ icon, label, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-sm transition-colors ${
+        danger ? 'text-danger hover:bg-danger/10' : 'text-subtle hover:bg-card hover:text-text'
+      }`}
+    >
+      {icon} {label}
+    </button>
   )
 }

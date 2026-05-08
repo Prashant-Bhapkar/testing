@@ -2,17 +2,14 @@ import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen } from '
 import { Link, useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../../context/ThemeContext'
 
-export default function Sidebar({ bucket, rootItems, currentItems, onRoot, onUpload, onNewFolder, onRefresh }) {
+export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefresh }) {
   const location = useLocation()
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
       {/* App header */}
-      <div className="px-4 py-4 border-b border-border flex items-center justify-between">
-        <div>
-          <div className="text-base font-bold text-text">🗄️ RAG Bot</div>
-          <div className="text-xs text-muted mt-0.5">Document Intelligence</div>
-        </div>
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <span className="text-sm font-bold text-text">🧠 DocIQ</span>
         <ThemeToggle />
       </div>
 
@@ -22,31 +19,25 @@ export default function Sidebar({ bucket, rootItems, currentItems, onRoot, onUpl
         <FeatureLink
           to="/"
           icon={<FolderOpen size={15} />}
-          label="RAG Docs"
-          desc="Browse & upload files"
+          label="Docs"
+          desc="Browse & manage files"
           active={location.pathname === '/'}
         />
         <FeatureLink
           to="/chat"
           icon={<MessageSquare size={15} />}
-          label="RAG Search"
+          label="Search"
           desc="Ask questions on docs"
           active={location.pathname === '/chat'}
         />
       </div>
 
       {/* Bucket badge */}
-      <div className="px-3 pt-1 pb-2">
+      <div className="px-3 pt-1 pb-3 border-b border-border">
         <div className="px-3 py-2 bg-card border border-border rounded-lg text-sm text-primary flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" style={{ animation: 'pulse 2s infinite' }} />
           <span className="truncate">{bucket}</span>
         </div>
-      </div>
-
-      {/* Stats */}
-      <div className="px-3 pb-3 border-b border-border flex gap-2">
-        <StatCard value={rootItems} label="Root" />
-        <StatCard value={currentItems} label="Here" />
       </div>
 
       {/* Quick actions */}
@@ -77,15 +68,6 @@ function FeatureLink({ to, icon, label, desc, active }) {
         <div className={`text-xs leading-tight mt-0.5 ${active ? 'text-primary/70' : 'text-muted'}`}>{desc}</div>
       </div>
     </Link>
-  )
-}
-
-function StatCard({ value, label }) {
-  return (
-    <div className="flex-1 bg-card rounded-lg p-2 text-center">
-      <div className="text-base font-bold text-primary">{value ?? '—'}</div>
-      <div className="text-[11px] text-muted uppercase tracking-wide">{label}</div>
-    </div>
   )
 }
 

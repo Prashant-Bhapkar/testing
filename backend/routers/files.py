@@ -1,4 +1,5 @@
 import io
+import logging
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -10,6 +11,7 @@ import services.embedding as embedding
 from config import MINIO_BUCKET
 
 router = APIRouter(prefix="/api")
+logger = logging.getLogger(__name__)
 
 MIME_MAP = {
     "pdf": "application/pdf", "png": "image/png",
@@ -55,6 +57,7 @@ async def upload(request: Request, background_tasks: BackgroundTasks):
         ext          = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
 
         storage.upload_object(object_name, content, content_type)
+        logger.info("Uploaded: %s  size=%d bytes  embed=%s", object_name, len(content), ext in EMBEDDABLE_EXTENSIONS)
 
         result = {"status": "uploaded", "object_name": object_name,
                   "size": len(content), "embedding": None}
@@ -103,6 +106,7 @@ def delete(path: str):
         if ext in EMBEDDABLE_EXTENSIONS:
             embedding.delete_embeddings_for_file(filename)
             result["embeddings_deleted"] = True
+        logger.info("Deleted file: %s  embeddings_cleaned=%s", path, result["embeddings_deleted"])
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -122,6 +126,7 @@ def delete_folder(path: str):
             if ext in EMBEDDABLE_EXTENSIONS:
                 embedding.delete_embeddings_for_file(filename)
                 cleaned.append(filename)
+        logger.info("Deleted folder: %s  files=%d  embeds_cleaned=%d", path, len(deleted), len(cleaned))
         return {"status": "deleted", "folder": path,
                 "files_deleted": len(deleted), "embeddings_cleaned": cleaned}
     except Exception as e:
