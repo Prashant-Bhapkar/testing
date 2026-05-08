@@ -2,7 +2,7 @@ import os
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from services.auth import require_admin
+from services.auth import require_admin, get_current_user
 from services import database
 import services.storage as storage
 import services.embedding as embedding
@@ -51,23 +51,51 @@ def admin_health(admin: dict = Depends(require_admin)):
 # ── Logs ───────────────────────────────────────────────────────
 
 @router.get("/logs")
-def get_logs(limit: int = 200, level: str = "", admin: dict = Depends(require_admin)):
+def get_logs(limit: int = 200, level: str = "", source: str = "", admin: dict = Depends(require_admin)):
     conn = database.get_conn()
     try:
         cur = conn.cursor()
+        conditions, params = [], []
         if level:
-            cur.execute(
-                "SELECT ts, level, logger, message FROM logs"
-                " WHERE level = %s ORDER BY ts DESC LIMIT %s",
-                (level.upper(), limit),
-            )
-        else:
-            cur.execute(
-                "SELECT ts, level, logger, message FROM logs ORDER BY ts DESC LIMIT %s",
-                (limit,),
-            )
+            conditions.append("level = %s")
+            params.append(level.upper())
+        if source:
+            conditions.append("source = %s")
+            params.append(source.lower())
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+        params.append(limit)
+        cur.execute(
+            f"SELECT ts, level, logger, source, message FROM logs {where} ORDER BY ts DESC LIMIT %s",
+            params,
+        )
         rows = cur.fetchall()
-        return [{"ts": str(r[0]), "level": r[1], "logger": r[2], "message": r[3]} for r in rows]
+        return [{"ts": str(r[0]), "level": r[1], "logger": r[2], "source": r[3], "message": r[4]} for r in rows]
+    finally:
+        cur.close()
+        database.release_conn(conn)
+
+
+class FrontendLogEntry(BaseModel):
+    level: str
+    message: str
+    logger: str = "frontend"
+
+
+@router.post("/log")
+def frontend_log(body: FrontendLogEntry, user: dict = Depends(get_current_user)):
+    """Accepts log entries from the frontend client."""
+    conn = database.get_conn()
+    try:
+        cur = conn.cursor()
+        level = body.level.upper()
+        if level not in ("ERROR", "WARNING", "INFO", "DEBUG"):
+            level = "INFO"
+        cur.execute(
+            "INSERT INTO logs (level, logger, source, message) VALUES (%s, %s, %s, %s)",
+            (level, body.logger[:100], "frontend", body.message[:2000]),
+        )
+        conn.commit()
+        return {"status": "logged"}
     finally:
         cur.close()
         database.release_conn(conn)

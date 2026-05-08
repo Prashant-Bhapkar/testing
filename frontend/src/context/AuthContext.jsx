@@ -5,21 +5,21 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem('dociq_user') || 'null')
+      return JSON.parse(localStorage.getItem('appeng_user') || 'null')
     } catch {
       return null
     }
   })
 
   function login(token, userInfo) {
-    localStorage.setItem('dociq_token', token)
-    localStorage.setItem('dociq_user', JSON.stringify(userInfo))
+    localStorage.setItem('appeng_token', token)
+    localStorage.setItem('appeng_user', JSON.stringify(userInfo))
     setUser(userInfo)
   }
 
   function logout() {
-    localStorage.removeItem('dociq_token')
-    localStorage.removeItem('dociq_user')
+    localStorage.removeItem('appeng_token')
+    localStorage.removeItem('appeng_user')
     setUser(null)
   }
 
@@ -35,5 +35,5 @@ export function useAuth() {
 }
 
 export function getToken() {
-  return localStorage.getItem('dociq_token')
+  return localStorage.getItem('appeng_token')
 }

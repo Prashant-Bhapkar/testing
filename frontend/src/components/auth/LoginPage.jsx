@@ -38,7 +38,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="text-5xl mb-3">🧠</div>
-          <h1 className="text-2xl font-bold text-text">DocIQ</h1>
+          <h1 className="text-2xl font-bold text-text">AppEngg</h1>
           <p className="text-sm text-muted mt-1">Sign in to continue</p>
         </div>
 

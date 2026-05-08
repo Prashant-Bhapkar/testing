@@ -1,5 +1,5 @@
 """
-DocIQ — FastAPI backend
+AppEngg — FastAPI backend
 Run: uvicorn main:app --reload --port 8000
 """
 import logging
@@ -29,10 +29,10 @@ class PgLogHandler(logging.Handler):
             try:
                 cur = conn.cursor()
                 cur.execute(
-                    "INSERT INTO logs (level, logger, message) VALUES (%s, %s, %s)",
-                    (record.levelname, record.name, self.format(record)[:2000]),
+                    "INSERT INTO logs (level, logger, source, message) VALUES (%s, %s, %s, %s)",
+                    (record.levelname, record.name, "backend", self.format(record)[:2000]),
                 )
-                cur.execute("DELETE FROM logs WHERE ts < NOW() - INTERVAL '7 days'")
+                cur.execute("DELETE FROM logs WHERE ts < NOW() - INTERVAL '24 hours'")
                 conn.commit()
                 cur.close()
             finally:
@@ -41,7 +41,7 @@ class PgLogHandler(logging.Handler):
             pass  # Never let logging crash the app
 
 
-app = FastAPI(title="DocIQ")
+app = FastAPI(title="AppEngg")
 
 
 @app.on_event("startup")

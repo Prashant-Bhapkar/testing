@@ -72,7 +72,7 @@ export default function ChatPage() {
       <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
         {/* App header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <span className="text-sm font-bold text-text">🧠 DocIQ</span>
+          <span className="text-sm font-bold text-text">🧠 AppEngg</span>
           <ThemeToggle />
         </div>
 

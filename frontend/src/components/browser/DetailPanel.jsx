@@ -84,6 +84,7 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
         <Prop label="Type"     value={item.ext ? item.ext.toUpperCase() : (item.type === 'folder' ? 'FOLDER' : 'FILE')} />
         {item.type === 'file' && <Prop label="Size" value={fmtSize(item.size)} />}
         <Prop label="Modified" value={fmtDate(item.modified)} />
+        {item.type === 'file' && item.uploaded_by && <Prop label="Uploaded By" value={item.uploaded_by} />}
         <Prop label="Path"     value={item.path} />
 
         {embStatus && (

@@ -52,10 +52,15 @@ def init_db():
                 ts TIMESTAMP DEFAULT NOW(),
                 level VARCHAR(10),
                 logger VARCHAR(100),
+                source VARCHAR(20) DEFAULT 'backend',
                 message TEXT
             )
         """)
         cur.execute("CREATE INDEX IF NOT EXISTS logs_ts_idx ON logs (ts DESC)")
+        # Migration: add source column to existing logs table
+        cur.execute(
+            "ALTER TABLE logs ADD COLUMN IF NOT EXISTS source VARCHAR(20) DEFAULT 'backend'"
+        )
         cur.execute("""
             CREATE TABLE IF NOT EXISTS app_config (
                 key VARCHAR(100) PRIMARY KEY,
@@ -64,6 +69,17 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS file_uploads (
+                id SERIAL PRIMARY KEY,
+                object_name TEXT UNIQUE NOT NULL,
+                uploaded_by VARCHAR(50) NOT NULL,
+                uploaded_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS file_uploads_obj_idx ON file_uploads (object_name)"
+        )
         cur.execute("SELECT COUNT(*) FROM users")
         if cur.fetchone()[0] == 0:
             cur.execute(

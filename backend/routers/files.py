@@ -25,10 +25,69 @@ MIME_MAP = {
 EMBEDDABLE_EXTENSIONS = {"pdf", "txt", "md", "csv", "docx"}
 
 
+def _attach_uploaders(items: list) -> None:
+    """Populate uploaded_by field on file items from the file_uploads table."""
+    file_paths = [i["path"] for i in items if i["type"] == "file"]
+    if not file_paths:
+        return
+    from services import database
+    conn = database.get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT object_name, uploaded_by FROM file_uploads WHERE object_name = ANY(%s)",
+            (file_paths,),
+        )
+        upload_map = {r[0]: r[1] for r in cur.fetchall()}
+    finally:
+        cur.close()
+        database.release_conn(conn)
+    for item in items:
+        if item["type"] == "file":
+            item["uploaded_by"] = upload_map.get(item["path"])
+
+
+def _record_upload(object_name: str, username: str) -> None:
+    """Upsert uploader info into file_uploads table."""
+    from services import database
+    conn = database.get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO file_uploads (object_name, uploaded_by) VALUES (%s, %s)"
+            " ON CONFLICT (object_name) DO UPDATE SET uploaded_by = EXCLUDED.uploaded_by, uploaded_at = NOW()",
+            (object_name, username),
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        cur.close()
+        database.release_conn(conn)
+
+
+def _remove_upload_records(object_names: list) -> None:
+    """Delete file_uploads entries for given object names."""
+    if not object_names:
+        return
+    from services import database
+    conn = database.get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM file_uploads WHERE object_name = ANY(%s)", (object_names,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        cur.close()
+        database.release_conn(conn)
+
+
 @router.get("/browse")
 def browse(prefix: str = "", user: dict = Depends(get_current_user)):
     try:
         items = storage.list_objects(prefix)
+        _attach_uploaders(items)
         return {"bucket": MINIO_BUCKET, "prefix": prefix, "items": items}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -39,6 +98,18 @@ def bucket_info(user: dict = Depends(get_current_user)):
     try:
         count = storage.bucket_root_count()
         return {"bucket": MINIO_BUCKET, "root_items": count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/search")
+def search(q: str = "", user: dict = Depends(get_current_user)):
+    if not q.strip():
+        return {"items": []}
+    try:
+        items = storage.search_all(q.strip())
+        _attach_uploaders(items)
+        return {"items": items}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -58,6 +129,7 @@ async def upload(request: Request, background_tasks: BackgroundTasks, user: dict
         ext          = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
 
         storage.upload_object(object_name, content, content_type)
+        _record_upload(object_name, user["sub"])
         logger.info("Uploaded: %s  size=%d bytes  embed=%s  by=%s",
                     object_name, len(content), ext in EMBEDDABLE_EXTENSIONS, user["sub"])
 
@@ -104,6 +176,7 @@ def delete(path: str, admin: dict = Depends(require_admin)):
         filename = Path(path).name
         ext      = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         storage.delete_object(path)
+        _remove_upload_records([path])
         result = {"status": "deleted", "path": path, "embeddings_deleted": False}
         if ext in EMBEDDABLE_EXTENSIONS:
             embedding.delete_embeddings_for_file(filename)
@@ -118,21 +191,20 @@ def delete(path: str, admin: dict = Depends(require_admin)):
 @router.delete("/delete-folder")
 def delete_folder(path: str, admin: dict = Depends(require_admin)):
     try:
-        objects  = storage.list_objects_recursive(path)
-        deleted, cleaned = [], []
-        for obj in objects:
-            obj_name = obj.object_name
+        deleted = storage.delete_folder_all(path)
+        cleaned = []
+        real_files = [p for p in deleted if not p.endswith("/.keep") and not p.endswith(".keep")]
+        for obj_name in deleted:
             filename = Path(obj_name).name
             ext      = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-            storage.delete_object(obj_name)
-            deleted.append(obj_name)
             if ext in EMBEDDABLE_EXTENSIONS:
                 embedding.delete_embeddings_for_file(filename)
                 cleaned.append(filename)
+        _remove_upload_records(deleted)
         logger.info("Deleted folder: %s  files=%d  embeds_cleaned=%d  by=%s",
-                    path, len(deleted), len(cleaned), admin["sub"])
+                    path, len(real_files), len(cleaned), admin["sub"])
         return {"status": "deleted", "folder": path,
-                "files_deleted": len(deleted), "embeddings_cleaned": cleaned}
+                "files_deleted": len(real_files), "embeddings_cleaned": cleaned}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

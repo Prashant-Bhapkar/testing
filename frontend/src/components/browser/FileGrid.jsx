@@ -68,6 +68,9 @@ function GridItem({ item, onClick, onRightClick }) {
       <div className="text-4xl mt-1">{getIcon(item)}</div>
       <div className="text-xs font-semibold break-all leading-snug line-clamp-2 mt-1">{item.name}</div>
       {item.type === 'file' && <div className="text-xs text-muted">{fmtSize(item.size)}</div>}
+      {item.uploaded_by && (
+        <div className="text-[10px] text-muted truncate w-full text-center">by {item.uploaded_by}</div>
+      )}
     </div>
   )
 }
@@ -79,13 +82,14 @@ function ListView({ items, onItemClick, onRightClick }) {
     <div className="rounded-xl border border-border overflow-hidden">
       <div
         className="grid text-xs uppercase tracking-widest text-muted bg-card px-4 py-2.5 border-b border-border font-semibold"
-        style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 6.5rem 8rem' }}
+        style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 5.5rem 7.5rem 6rem' }}
       >
         <span />
         <span>Name</span>
         <span>Type</span>
         <span className="text-right">Size</span>
         <span className="text-right">Modified</span>
+        <span className="text-right">Uploaded By</span>
       </div>
 
       {items.map((item, idx) => (
@@ -113,7 +117,7 @@ function ListRow({ item, isLast, onClick, onRightClick }) {
       onClick={onClick}
       onContextMenu={onRightClick}
       className={`grid items-center px-4 py-3 cursor-pointer hover:bg-card transition-colors ${!isLast ? 'border-b border-border' : ''}`}
-      style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 6.5rem 8rem' }}
+      style={{ gridTemplateColumns: '2.5rem 1fr 5.5rem 5.5rem 7.5rem 6rem' }}
     >
       <span className="text-xl">{getIcon(item)}</span>
       <span className="text-sm font-medium truncate pr-3">{item.name}</span>
@@ -124,6 +128,7 @@ function ListRow({ item, isLast, onClick, onRightClick }) {
       </span>
       <span className="text-sm text-muted text-right">{item.type === 'file' ? fmtSize(item.size) : '—'}</span>
       <span className="text-sm text-muted text-right">{fmtDate(item.modified)}</span>
+      <span className="text-xs text-muted text-right truncate">{item.uploaded_by || '—'}</span>
     </div>
   )
 }

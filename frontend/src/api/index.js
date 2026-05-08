@@ -3,12 +3,12 @@ import axios from 'axios'
 const BASE = '/api'
 
 function getToken() {
-  return localStorage.getItem('dociq_token')
+  return localStorage.getItem('appeng_token')
 }
 
 function handleUnauthorized() {
-  localStorage.removeItem('dociq_token')
-  localStorage.removeItem('dociq_user')
+  localStorage.removeItem('appeng_token')
+  localStorage.removeItem('appeng_user')
   window.location.href = '/login'
 }
 
@@ -65,8 +65,8 @@ export const api = {
 
   // ── Admin ─────────────────────────────────────────────────────
   adminHealth:  () => request('/admin/health'),
-  adminLogs:    (limit = 200, level = '') =>
-    request(`/admin/logs?limit=${limit}${level ? `&level=${level}` : ''}`),
+  adminLogs:    (limit = 200, level = '', source = '') =>
+    request(`/admin/logs?limit=${limit}${level ? `&level=${level}` : ''}${source ? `&source=${source}` : ''}`),
   clearLogs:    () => request('/admin/logs', { method: 'DELETE' }),
   adminConfig:  () => request('/admin/config'),
   setConfig:    (key, value) =>
@@ -78,9 +78,17 @@ export const api = {
   resetConfig:  (key) =>
     request(`/admin/config/${encodeURIComponent(key)}`, { method: 'DELETE' }),
 
+  frontendLog: (level, message, loggerName = 'frontend') =>
+    request('/admin/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ level, message, logger: loggerName }),
+    }).catch(() => {}),
+
   // ── Files ─────────────────────────────────────────────────────
   browse:          (prefix = '') => request(`/browse?prefix=${encodeURIComponent(prefix)}`),
   bucketInfo:      ()            => request('/bucket-info'),
+  searchFiles:     (q)           => request(`/search?q=${encodeURIComponent(q)}`),
   embeddingStatus: (filename)    => request(`/embedding-status?filename=${encodeURIComponent(filename)}`),
   health:          ()            => fetch(`${BASE}/health`).then(r => r.json()),
   healthFull:      ()            => request('/health/full'),

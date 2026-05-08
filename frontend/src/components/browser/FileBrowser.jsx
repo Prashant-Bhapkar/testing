@@ -25,12 +25,14 @@ export default function FileBrowser() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const [viewMode, setViewMode]       = useState('grid')
-  const [showUpload, setShowUpload]   = useState(false)
-  const [showFolder, setShowFolder]   = useState(false)
+  const [viewMode, setViewMode]         = useState('grid')
+  const [showUpload, setShowUpload]     = useState(false)
+  const [showFolder, setShowFolder]     = useState(false)
   const [confirmState, setConfirmState] = useState(null)
   const [previewState, setPreviewState] = useState(null)
-  const [ctxMenu, setCtxMenu]         = useState(null)
+  const [ctxMenu, setCtxMenu]           = useState(null)
+  const [deepSearchResults, setDeepSearchResults] = useState(null)
+  const [searchLoading, setSearchLoading] = useState(false)
 
   const loadContent = useCallback(async (p = prefix) => {
     setLoading(true)
@@ -57,10 +59,31 @@ export default function FileBrowser() {
     loadBucketInfo()
   }, [])
 
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setDeepSearchResults(null)
+      return
+    }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true)
+      try {
+        const data = await api.searchFiles(searchQuery.trim())
+        setDeepSearchResults(data.items)
+      } catch (e) {
+        toast(e.message, 'err')
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, toast])
+
   function navigateTo(p) {
     setHistory(h => [...h, prefix])
     setPrefix(p)
     setDetailOpen(false)
+    setSearchQuery('')
+    setDeepSearchResults(null)
     loadContent(p)
   }
 
@@ -117,9 +140,7 @@ export default function FileBrowser() {
 
   const pathParts = prefix ? prefix.split('/').filter(Boolean) : []
 
-  const visibleItems = searchQuery.trim()
-    ? items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : items
+  const visibleItems = deepSearchResults !== null ? deepSearchResults : items
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg">
@@ -203,22 +224,26 @@ export default function FileBrowser() {
           </div>
           {searchQuery && (
             <div className="text-xs text-muted mt-1.5 px-1">
-              {visibleItems.length} of {items.length} items match
+              {searchLoading
+                ? 'Searching across all folders…'
+                : deepSearchResults !== null
+                  ? `${deepSearchResults.length} result(s) across all folders`
+                  : ''}
             </div>
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {loading ? (
+          {(loading || searchLoading) ? (
             <div className="flex flex-col items-center justify-center h-40 gap-3 text-muted">
               <div className="spinner" />
-              <span className="text-sm">Loading…</span>
+              <span className="text-sm">{searchLoading ? 'Searching…' : 'Loading…'}</span>
             </div>
           ) : visibleItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted">
               <span className="text-4xl opacity-40">{searchQuery ? '🔍' : '📭'}</span>
-              <span className="text-sm">{searchQuery ? 'No matches found' : 'This folder is empty'}</span>
+              <span className="text-sm">{searchQuery ? 'No results found' : 'This folder is empty'}</span>
             </div>
           ) : (
             <FileGrid

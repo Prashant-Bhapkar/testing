@@ -11,7 +11,7 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
       {/* App header */}
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <span className="text-sm font-bold text-text">🧠 DocIQ</span>
+        <span className="text-sm font-bold text-text">🧠 AppEngg</span>
         <ThemeToggle />
       </div>
 
@@ -43,16 +43,8 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
         )}
       </div>
 
-      {/* Bucket badge */}
-      <div className="px-3 pt-1 pb-3 border-b border-border">
-        <div className="px-3 py-2 bg-card border border-border rounded-lg text-sm text-primary flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" style={{ animation: 'pulse 2s infinite' }} />
-          <span className="truncate">{bucket}</span>
-        </div>
-      </div>
-
       {/* Quick actions */}
-      <div className="px-2 flex-1 pt-2">
+      <div className="px-2 flex-1 pt-3 border-t border-border mt-2">
         <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-1.5">Quick Actions</div>
         <NavItem icon={<Home size={15} />}       label="Root"         onClick={onRoot} />
         <NavItem icon={<Upload size={15} />}     label="Upload Files" onClick={onUpload} />

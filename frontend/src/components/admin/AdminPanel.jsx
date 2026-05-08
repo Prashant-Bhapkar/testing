@@ -69,7 +69,7 @@ function AdminSidebar() {
   return (
     <aside className="w-[220px] min-w-[220px] bg-surface border-r border-border flex flex-col">
       <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-        <span className="text-sm font-bold text-text">🧠 DocIQ</span>
+        <span className="text-sm font-bold text-text">🧠 AppEngg</span>
         <ThemeToggle />
       </div>
 
@@ -171,22 +171,28 @@ function HealthTab() {
 
 // ── Logs Tab ───────────────────────────────────────────────────
 
+const SOURCE_COLORS = {
+  backend:  'text-primary bg-primary/10',
+  frontend: 'text-yellow-500 bg-yellow-500/10',
+}
+
 function LogsTab() {
-  const [logs, setLogs]     = useState([])
-  const [level, setLevel]   = useState('')
-  const [loading, setLoading] = useState(false)
+  const [logs, setLogs]         = useState([])
+  const [level, setLevel]       = useState('')
+  const [source, setSource]     = useState('')
+  const [loading, setLoading]   = useState(false)
   const [expanded, setExpanded] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      setLogs(await api.adminLogs(300, level))
+      setLogs(await api.adminLogs(300, level, source))
     } catch (e) {
       setLogs([])
     } finally {
       setLoading(false)
     }
-  }, [level])
+  }, [level, source])
 
   useEffect(() => { load() }, [load])
 
@@ -198,6 +204,15 @@ function LogsTab() {
   return (
     <div>
       <SectionHeader title="Application Logs" onRefresh={load} loading={loading}>
+        <select
+          value={source}
+          onChange={e => setSource(e.target.value)}
+          className="bg-card border border-border rounded-lg px-2 py-1.5 text-xs text-text outline-none"
+        >
+          <option value="">All sources</option>
+          <option value="backend">Backend</option>
+          <option value="frontend">Frontend</option>
+        </select>
         <select
           value={level}
           onChange={e => setLevel(e.target.value)}
@@ -219,9 +234,10 @@ function LogsTab() {
 
       <div className="mt-4 rounded-xl border border-border overflow-hidden">
         <div className="grid text-[11px] uppercase tracking-widest text-muted bg-card px-4 py-2 border-b border-border font-semibold"
-          style={{ gridTemplateColumns: '10rem 5rem 12rem 1fr' }}>
+          style={{ gridTemplateColumns: '10rem 5rem 5.5rem 10rem 1fr' }}>
           <span>Time</span>
           <span>Level</span>
+          <span>Source</span>
           <span>Logger</span>
           <span>Message</span>
         </div>
@@ -232,12 +248,15 @@ function LogsTab() {
             <div
               key={i}
               onClick={() => setExpanded(expanded === i ? null : i)}
-              className={`grid items-start px-4 py-2 border-b border-border last:border-0 cursor-pointer hover:bg-card transition-colors text-xs`}
-              style={{ gridTemplateColumns: '10rem 5rem 12rem 1fr' }}
+              className="grid items-start px-4 py-2 border-b border-border last:border-0 cursor-pointer hover:bg-card transition-colors text-xs"
+              style={{ gridTemplateColumns: '10rem 5rem 5.5rem 10rem 1fr' }}
             >
               <span className="text-muted font-mono shrink-0">{log.ts?.slice(0, 19)}</span>
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold w-fit ${LEVEL_COLORS[log.level] || 'text-muted'}`}>
                 {log.level}
+              </span>
+              <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold w-fit ${SOURCE_COLORS[log.source] || 'text-muted bg-card'}`}>
+                {log.source || 'backend'}
               </span>
               <span className="text-muted truncate pr-2">{log.logger}</span>
               <span className={`text-subtle break-words ${expanded === i ? '' : 'truncate'}`}>{log.message}</span>
