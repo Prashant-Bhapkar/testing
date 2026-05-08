@@ -1,12 +1,16 @@
 import { X, Download, Eye, Copy, Trash2, Brain, RefreshCw, FolderOpen } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { api } from '../../api'
+import { useAuth } from '../../context/AuthContext'
 import { getIcon, fmtSize, fmtDate } from './FileGrid'
 
 const PREVIEW_EXTS    = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'txt', 'csv', 'md']
 const EMBEDDABLE_EXTS = ['pdf', 'txt', 'md', 'csv', 'docx']
 
 export default function DetailPanel({ item, open, onClose, onDelete, onNavigate, onPreview, toast }) {
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
+
   const [embStatus, setEmbStatus]     = useState(null)
   const [checking, setChecking]       = useState(false)
   const [reEmbedding, setReEmbedding] = useState(false)
@@ -103,8 +107,10 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
               primary
               onClick={() => onNavigate(item)}
             />
-            <DetBtn icon={<Copy size={14} />}   label="Copy Path"     onClick={copyPath} />
-            <DetBtn icon={<Trash2 size={14} />} label="Delete Folder" danger onClick={() => onDelete(item)} />
+            <DetBtn icon={<Copy size={14} />} label="Copy Path" onClick={copyPath} />
+            {isAdmin && (
+              <DetBtn icon={<Trash2 size={14} />} label="Delete Folder" danger onClick={() => onDelete(item)} />
+            )}
           </>
         ) : (
           <>
@@ -115,20 +121,22 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
               onClick={() => { window.location.href = api.download(item.path) }} />
             <DetBtn icon={<Copy size={14} />} label="Copy Path" onClick={copyPath} />
             {isEmbeddable && (
-              <>
-                <DetBtn
-                  icon={<Brain size={14} />}
-                  label={checking ? 'Checking…' : 'Embedding Status'}
-                  onClick={checkEmbedding}
-                />
-                <DetBtn
-                  icon={<RefreshCw size={14} className={reEmbedding ? 'animate-spin' : ''} />}
-                  label={reEmbedding ? 'Re-embedding…' : 'Re-embed Document'}
-                  onClick={doReEmbed}
-                />
-              </>
+              <DetBtn
+                icon={<Brain size={14} />}
+                label={checking ? 'Checking…' : 'Embedding Status'}
+                onClick={checkEmbedding}
+              />
             )}
-            <DetBtn icon={<Trash2 size={14} />} label="Delete File" danger onClick={() => onDelete(item)} />
+            {isEmbeddable && isAdmin && (
+              <DetBtn
+                icon={<RefreshCw size={14} className={reEmbedding ? 'animate-spin' : ''} />}
+                label={reEmbedding ? 'Re-embedding…' : 'Re-embed Document'}
+                onClick={doReEmbed}
+              />
+            )}
+            {isAdmin && (
+              <DetBtn icon={<Trash2 size={14} />} label="Delete File" danger onClick={() => onDelete(item)} />
+            )}
           </>
         )}
       </div>

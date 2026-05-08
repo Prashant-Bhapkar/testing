@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../api'
 import { useToast } from '../../context/ToastContext'
+import { useAuth } from '../../context/AuthContext'
 import Sidebar from './Sidebar'
 import FileGrid from './FileGrid'
 import DetailPanel from './DetailPanel'
@@ -12,6 +13,8 @@ import { ChevronLeft, FolderPlus, Upload, LayoutGrid, List, Search, Eye, Trash2,
 
 export default function FileBrowser() {
   const toast = useToast()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
 
   const [prefix, setPrefix]       = useState('')
   const [history, setHistory]     = useState([])
@@ -75,7 +78,6 @@ export default function FileBrowser() {
     toast('Refreshed', 'info')
   }
 
-  // Folders navigate in; files open detail panel
   function handleItemClick(item) {
     if (item.type === 'folder') {
       navigateTo(item.path)
@@ -115,7 +117,6 @@ export default function FileBrowser() {
 
   const pathParts = prefix ? prefix.split('/').filter(Boolean) : []
 
-  // Client-side filter
   const visibleItems = searchQuery.trim()
     ? items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : items
@@ -296,12 +297,14 @@ export default function FileBrowser() {
                 onClick={() => { setSelected(ctxMenu.item); setDetailOpen(true); setCtxMenu(null) }}
               />
             )}
-            <CtxItem
-              icon={<Trash2 size={13} />}
-              label="Delete"
-              danger
-              onClick={() => { confirmDelete(ctxMenu.item); setCtxMenu(null) }}
-            />
+            {isAdmin && (
+              <CtxItem
+                icon={<Trash2 size={13} />}
+                label="Delete"
+                danger
+                onClick={() => { confirmDelete(ctxMenu.item); setCtxMenu(null) }}
+              />
+            )}
           </div>
         </>
       )}

@@ -2,8 +2,27 @@ import axios from 'axios'
 
 const BASE = '/api'
 
+function getToken() {
+  return localStorage.getItem('dociq_token')
+}
+
+function handleUnauthorized() {
+  localStorage.removeItem('dociq_token')
+  localStorage.removeItem('dociq_user')
+  window.location.href = '/login'
+}
+
 async function request(path, options = {}) {
-  const res = await fetch(`${BASE}${path}`, options)
+  const token = getToken()
+  const headers = { ...options.headers }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const res = await fetch(`${BASE}${path}`, { ...options, headers })
+
+  if (res.status === 401) {
+    handleUnauthorized()
+    throw new Error('Session expired. Please log in again.')
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }))
     throw new Error(err.detail || 'Request failed')
@@ -12,32 +31,81 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  // ── Auth ──────────────────────────────────────────────────────
+  login: (username, password) =>
+    fetch(`${BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }).then(async res => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.detail || 'Login failed')
+      return data
+    }),
+
+  me: () => request('/auth/me'),
+
+  changePassword: (old_password, new_password) =>
+    request('/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ old_password, new_password }),
+    }),
+
+  // ── Users (admin) ─────────────────────────────────────────────
+  listUsers: () => request('/auth/users'),
+  createUser: (username, password, role) =>
+    request('/auth/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password, role }),
+    }),
+  deleteUser: (username) =>
+    request(`/auth/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
+
+  // ── Admin ─────────────────────────────────────────────────────
+  adminHealth:  () => request('/admin/health'),
+  adminLogs:    (limit = 200, level = '') =>
+    request(`/admin/logs?limit=${limit}${level ? `&level=${level}` : ''}`),
+  clearLogs:    () => request('/admin/logs', { method: 'DELETE' }),
+  adminConfig:  () => request('/admin/config'),
+  setConfig:    (key, value) =>
+    request(`/admin/config/${encodeURIComponent(key)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value }),
+    }),
+  resetConfig:  (key) =>
+    request(`/admin/config/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+
+  // ── Files ─────────────────────────────────────────────────────
   browse:          (prefix = '') => request(`/browse?prefix=${encodeURIComponent(prefix)}`),
   bucketInfo:      ()            => request('/bucket-info'),
   embeddingStatus: (filename)    => request(`/embedding-status?filename=${encodeURIComponent(filename)}`),
-  health:          ()            => request('/health'),
+  health:          ()            => fetch(`${BASE}/health`).then(r => r.json()),
   healthFull:      ()            => request('/health/full'),
 
   upload(prefix, file, onProgress) {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('prefix', prefix)
+    const token = getToken()
     return axios
       .post(`${BASE}/upload`, fd, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         onUploadProgress: (event) => {
-          if (event.total) {
-            onProgress?.(Math.round((event.loaded * 100) / event.total))
-          }
+          if (event.total) onProgress?.(Math.round((event.loaded * 100) / event.total))
         },
       })
       .then(res => res.data)
       .catch(err => {
+        if (err.response?.status === 401) handleUnauthorized()
         throw new Error(err.response?.data?.detail || err.message || 'Upload failed')
       })
   },
 
-  download:  (path) => `/api/download?path=${encodeURIComponent(path)}`,
-  previewUrl:(path) => `/api/preview?path=${encodeURIComponent(path)}`,
+  download:   (path) => `/api/download?path=${encodeURIComponent(path)}`,
+  previewUrl: (path) => `/api/preview?path=${encodeURIComponent(path)}`,
 
   deleteFile:   (path) => request(`/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),
   deleteFolder: (path) => request(`/delete-folder?path=${encodeURIComponent(path)}`, { method: 'DELETE' }),

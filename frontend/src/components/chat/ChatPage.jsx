@@ -2,14 +2,16 @@ import { useState, useRef, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../../api'
 import { useToast } from '../../context/ToastContext'
+import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../context/ThemeContext'
 import MessageList from './MessageList'
 import InputArea from './InputArea'
-import { Trash2, FolderOpen, MessageSquare, PlusCircle } from 'lucide-react'
+import { Trash2, FolderOpen, MessageSquare, PlusCircle, ShieldCheck, LogOut } from 'lucide-react'
 
 export default function ChatPage() {
   const toast = useToast()
   const location = useLocation()
+  const { user, logout } = useAuth()
   const [messages, setMessages] = useState([])
   const [history, setHistory]   = useState([])
   const [sessions, setSessions] = useState([])
@@ -79,6 +81,9 @@ export default function ChatPage() {
           <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
           <FeatureLink to="/"     icon={<FolderOpen size={15} />}    label="Docs"   desc="Browse & manage files" active={location.pathname === '/'} />
           <FeatureLink to="/chat" icon={<MessageSquare size={15} />} label="Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
+          {user?.role === 'admin' && (
+            <FeatureLink to="/admin" icon={<ShieldCheck size={15} />} label="Admin" desc="Logs, health & config" active={location.pathname === '/admin'} />
+          )}
         </div>
 
         {/* New chat */}
@@ -119,6 +124,15 @@ export default function ChatPage() {
           >
             <Trash2 size={15} /> Clear History
           </button>
+          <div className="flex items-center gap-2 px-3 py-2 mt-1">
+            <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
+              {user?.username?.[0]?.toUpperCase()}
+            </div>
+            <span className="text-xs text-subtle truncate flex-1">{user?.username}</span>
+            <button onClick={logout} title="Sign out" className="text-muted hover:text-danger transition-colors">
+              <LogOut size={13} />
+            </button>
+          </div>
         </div>
       </aside>
 

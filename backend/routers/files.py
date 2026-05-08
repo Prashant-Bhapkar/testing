@@ -1,13 +1,14 @@
 import io
 import logging
 from pathlib import Path
-from fastapi import APIRouter, HTTPException, Request, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Request, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from minio.error import S3Error
 
 import services.storage as storage
 import services.embedding as embedding
+from services.auth import get_current_user, require_admin
 from config import MINIO_BUCKET
 
 router = APIRouter(prefix="/api")
@@ -25,7 +26,7 @@ EMBEDDABLE_EXTENSIONS = {"pdf", "txt", "md", "csv", "docx"}
 
 
 @router.get("/browse")
-def browse(prefix: str = ""):
+def browse(prefix: str = "", user: dict = Depends(get_current_user)):
     try:
         items = storage.list_objects(prefix)
         return {"bucket": MINIO_BUCKET, "prefix": prefix, "items": items}
@@ -34,7 +35,7 @@ def browse(prefix: str = ""):
 
 
 @router.get("/bucket-info")
-def bucket_info():
+def bucket_info(user: dict = Depends(get_current_user)):
     try:
         count = storage.bucket_root_count()
         return {"bucket": MINIO_BUCKET, "root_items": count}
@@ -43,7 +44,7 @@ def bucket_info():
 
 
 @router.post("/upload")
-async def upload(request: Request, background_tasks: BackgroundTasks):
+async def upload(request: Request, background_tasks: BackgroundTasks, user: dict = Depends(get_current_user)):
     try:
         form        = await request.form()
         file        = form.get("file")
@@ -57,7 +58,8 @@ async def upload(request: Request, background_tasks: BackgroundTasks):
         ext          = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
 
         storage.upload_object(object_name, content, content_type)
-        logger.info("Uploaded: %s  size=%d bytes  embed=%s", object_name, len(content), ext in EMBEDDABLE_EXTENSIONS)
+        logger.info("Uploaded: %s  size=%d bytes  embed=%s  by=%s",
+                    object_name, len(content), ext in EMBEDDABLE_EXTENSIONS, user["sub"])
 
         result = {"status": "uploaded", "object_name": object_name,
                   "size": len(content), "embedding": None}
@@ -74,7 +76,7 @@ async def upload(request: Request, background_tasks: BackgroundTasks):
 
 
 @router.get("/download")
-def download(path: str):
+def download(path: str, user: dict = Depends(get_current_user)):
     try:
         data     = storage.download_object(path)
         filename = path.split("/")[-1]
@@ -87,7 +89,7 @@ def download(path: str):
 
 
 @router.get("/preview")
-def preview(path: str):
+def preview(path: str, user: dict = Depends(get_current_user)):
     try:
         data = storage.download_object(path)
         ext  = path.rsplit(".", 1)[-1].lower() if "." in path else ""
@@ -97,7 +99,7 @@ def preview(path: str):
 
 
 @router.delete("/delete")
-def delete(path: str):
+def delete(path: str, admin: dict = Depends(require_admin)):
     try:
         filename = Path(path).name
         ext      = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -106,14 +108,15 @@ def delete(path: str):
         if ext in EMBEDDABLE_EXTENSIONS:
             embedding.delete_embeddings_for_file(filename)
             result["embeddings_deleted"] = True
-        logger.info("Deleted file: %s  embeddings_cleaned=%s", path, result["embeddings_deleted"])
+        logger.info("Deleted file: %s  embeddings_cleaned=%s  by=%s",
+                    path, result["embeddings_deleted"], admin["sub"])
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/delete-folder")
-def delete_folder(path: str):
+def delete_folder(path: str, admin: dict = Depends(require_admin)):
     try:
         objects  = storage.list_objects_recursive(path)
         deleted, cleaned = [], []
@@ -126,7 +129,8 @@ def delete_folder(path: str):
             if ext in EMBEDDABLE_EXTENSIONS:
                 embedding.delete_embeddings_for_file(filename)
                 cleaned.append(filename)
-        logger.info("Deleted folder: %s  files=%d  embeds_cleaned=%d", path, len(deleted), len(cleaned))
+        logger.info("Deleted folder: %s  files=%d  embeds_cleaned=%d  by=%s",
+                    path, len(deleted), len(cleaned), admin["sub"])
         return {"status": "deleted", "folder": path,
                 "files_deleted": len(deleted), "embeddings_cleaned": cleaned}
     except Exception as e:
@@ -139,7 +143,7 @@ class FolderRequest(BaseModel):
 
 
 @router.post("/create-folder")
-def create_folder(body: FolderRequest):
+def create_folder(body: FolderRequest, user: dict = Depends(get_current_user)):
     try:
         name = body.folder_name.strip().strip("/")
         if not name:
@@ -151,7 +155,7 @@ def create_folder(body: FolderRequest):
 
 
 @router.get("/embedding-status")
-def embedding_status(filename: str):
+def embedding_status(filename: str, user: dict = Depends(get_current_user)):
     count = embedding.count_embeddings_for_file(filename)
     return {"filename": filename, "chunks_embedded": count, "is_embedded": count > 0}
 
@@ -161,7 +165,7 @@ class ReEmbedRequest(BaseModel):
 
 
 @router.post("/re-embed")
-def re_embed(body: ReEmbedRequest):
+def re_embed(body: ReEmbedRequest, admin: dict = Depends(require_admin)):
     try:
         filename = Path(body.path).name
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -169,6 +173,7 @@ def re_embed(body: ReEmbedRequest):
             raise HTTPException(status_code=400, detail=f"'{ext}' files are not embeddable")
         data   = storage.download_object(body.path)
         result = embedding.embed_document(data, body.path)
+        logger.info("Re-embed: %s  by=%s", body.path, admin["sub"])
         return result
     except HTTPException:
         raise

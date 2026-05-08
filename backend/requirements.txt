@@ -8,3 +8,6 @@ uvicorn
 python-multipart
 httpx
 python-docx
+psycopg2-binary
+python-jose[cryptography]
+passlib[bcrypt]

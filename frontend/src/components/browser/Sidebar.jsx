@@ -1,9 +1,11 @@
-import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen } from 'lucide-react'
+import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../../context/ThemeContext'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefresh }) {
   const location = useLocation()
+  const { user, logout } = useAuth()
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
@@ -30,6 +32,15 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
           desc="Ask questions on docs"
           active={location.pathname === '/chat'}
         />
+        {user?.role === 'admin' && (
+          <FeatureLink
+            to="/admin"
+            icon={<ShieldCheck size={15} />}
+            label="Admin"
+            desc="Logs, health & config"
+            active={location.pathname === '/admin'}
+          />
+        )}
       </div>
 
       {/* Bucket badge */}
@@ -47,6 +58,20 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
         <NavItem icon={<Upload size={15} />}     label="Upload Files" onClick={onUpload} />
         <NavItem icon={<FolderPlus size={15} />} label="New Folder"   onClick={onNewFolder} />
         <NavItem icon={<RefreshCw size={15} />}  label="Refresh"      onClick={onRefresh} />
+      </div>
+
+      {/* User info + logout */}
+      <div className="px-3 py-3 border-t border-border">
+        <div className="flex items-center gap-2 px-2 py-1 mb-1">
+          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
+            {user?.username?.[0]?.toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-text truncate">{user?.username}</div>
+            <div className="text-[11px] text-muted capitalize">{user?.role}</div>
+          </div>
+        </div>
+        <NavItem icon={<LogOut size={15} />} label="Sign Out" onClick={logout} />
       </div>
     </aside>
   )
