@@ -80,6 +80,29 @@ def init_db():
         cur.execute(
             "CREATE INDEX IF NOT EXISTS file_uploads_obj_idx ON file_uploads (object_name)"
         )
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS monitored_systems (
+                id SERIAL PRIMARY KEY,
+                runner_tags TEXT NOT NULL,
+                hostname VARCHAR(255),
+                ip VARCHAR(50) NOT NULL,
+                username VARCHAR(255) NOT NULL,
+                encrypted_password TEXT NOT NULL,
+                extra_fields JSONB DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS hyperlinks (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                env VARCHAR(100),
+                tag VARCHAR(100),
+                extra_fields JSONB DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
         cur.execute("SELECT COUNT(*) FROM users")
         if cur.fetchone()[0] == 0:
             cur.execute(

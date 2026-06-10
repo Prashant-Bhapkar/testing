@@ -138,4 +138,16 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, history }),
     }),
+
+  // ── Systems ───────────────────────────────────────────────────
+  listSystems:   ()     => request('/systems'),
+  addSystem:     (body) => request('/systems', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  deleteSystem:  (id)   => request(`/systems/${id}`, { method: 'DELETE' }),
+  checkSystem:   (id)   => request(`/systems/${id}/check`),
+  restartRunner: (id)   => request(`/systems/${id}/restart`, { method: 'POST' }),
+
+  // ── Links ─────────────────────────────────────────────────────
+  listLinks:  ()     => request('/links'),
+  addLink:    (body) => request('/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  deleteLink: (id)   => request(`/links/${id}`, { method: 'DELETE' }),
 }

@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import os
 from dotenv import load_dotenv
 import urllib3
@@ -41,3 +43,11 @@ POSTGRES_DB       = os.getenv("POSTGRES_DB", "dociq")
 JWT_SECRET         = os.getenv("JWT_SECRET", "change-this-secret")
 JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))
 JWT_ALGORITHM      = "HS256"
+
+# ── Encryption (passwords at rest) ────────────────────────────
+# If not set, derive a stable Fernet key from JWT_SECRET so existing
+# encrypted values survive restarts without extra config.
+_raw_enc = os.getenv("ENCRYPTION_KEY", "")
+ENCRYPTION_KEY = _raw_enc if _raw_enc else base64.urlsafe_b64encode(
+    hashlib.sha256(JWT_SECRET.encode()).digest()
+).decode()

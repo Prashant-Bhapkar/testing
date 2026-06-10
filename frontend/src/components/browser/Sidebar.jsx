@@ -1,4 +1,4 @@
-import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut } from 'lucide-react'
+import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut, Server, Link2 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
@@ -31,6 +31,20 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
           label="Search"
           desc="Ask questions on docs"
           active={location.pathname === '/chat'}
+        />
+        <FeatureLink
+          to="/systems"
+          icon={<Server size={15} />}
+          label="Health"
+          desc="Monitor GitLab runners"
+          active={location.pathname === '/systems'}
+        />
+        <FeatureLink
+          to="/links"
+          icon={<Link2 size={15} />}
+          label="Links"
+          desc="Saved hyperlinks"
+          active={location.pathname === '/links'}
         />
         {user?.role === 'admin' && (
           <FeatureLink

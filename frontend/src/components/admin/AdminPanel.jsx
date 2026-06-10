@@ -6,7 +6,7 @@ import { ThemeToggle } from '../../context/ThemeContext'
 import {
   Activity, FileText, Settings, Users, RefreshCw, Trash2,
   ChevronDown, ChevronUp, FolderOpen, MessageSquare, ShieldCheck,
-  LogOut, PlusCircle, Edit2, Check, X, RotateCcw,
+  LogOut, PlusCircle, Edit2, Check, X, RotateCcw, Server, Link2,
 } from 'lucide-react'
 
 const LEVEL_COLORS = {
@@ -75,9 +75,11 @@ function AdminSidebar() {
 
       <div className="px-3 pt-3 pb-1">
         <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
-        <SideLink to="/"      icon={<FolderOpen size={15} />}    label="Docs"   desc="Browse & manage files" active={location.pathname === '/'} />
-        <SideLink to="/chat"  icon={<MessageSquare size={15} />} label="Search" desc="Ask questions on docs"  active={location.pathname === '/chat'} />
-        <SideLink to="/admin" icon={<ShieldCheck size={15} />}   label="Admin"  desc="Logs, health & config"  active={location.pathname === '/admin'} />
+        <SideLink to="/"        icon={<FolderOpen size={15} />}    label="Docs"    desc="Browse & manage files"  active={location.pathname === '/'} />
+        <SideLink to="/chat"    icon={<MessageSquare size={15} />} label="Search"  desc="Ask questions on docs"  active={location.pathname === '/chat'} />
+        <SideLink to="/systems" icon={<Server size={15} />}        label="Health"  desc="Monitor GitLab runners"  active={location.pathname === '/systems'} />
+        <SideLink to="/links"   icon={<Link2 size={15} />}         label="Links"   desc="Saved hyperlinks"        active={location.pathname === '/links'} />
+        <SideLink to="/admin"   icon={<ShieldCheck size={15} />}   label="Admin"   desc="Logs, health & config"   active={location.pathname === '/admin'} />
       </div>
 
       <div className="mt-auto px-3 py-3 border-t border-border">
