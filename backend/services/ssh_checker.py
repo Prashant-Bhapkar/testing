@@ -1,15 +1,22 @@
 import logging
 import platform
 import shlex
+import shutil
 import socket
 import subprocess
 
-import paramiko
-
 logger = logging.getLogger(__name__)
 
-SSH_TIMEOUT = 6      # seconds for TCP connect + banner
-CMD_TIMEOUT = 8      # seconds to wait for remote command output
+CMD_TIMEOUT = 20  # seconds for the full SSH command
+
+_SSH_OPTS = [
+    "-o", "StrictHostKeyChecking=no",
+    "-o", "ConnectTimeout=10",
+    "-o", "BatchMode=no",
+    "-o", "LogLevel=ERROR",
+    "-o", "PubkeyAuthentication=no",
+    "-o", "PasswordAuthentication=yes",
+]
 
 
 def _fernet():
@@ -27,7 +34,6 @@ def decrypt_password(encrypted: str) -> str:
 
 
 def ping_host(ip: str) -> bool:
-    """ICMP ping — may return False on networks that block ICMP even if the machine is alive."""
     flag = ["-n", "1", "-w", "2000"] if platform.system().lower() == "windows" else ["-c", "1", "-W", "2"]
     try:
         result = subprocess.run(["ping"] + flag + [ip], capture_output=True, timeout=5)
@@ -37,7 +43,6 @@ def ping_host(ip: str) -> bool:
 
 
 def _tcp_reachable(ip: str, port: int = 22) -> bool:
-    """Quick TCP-level check on port 22 before attempting a full SSH handshake."""
     try:
         with socket.create_connection((ip, port), timeout=3):
             return True
@@ -45,69 +50,65 @@ def _tcp_reachable(ip: str, port: int = 22) -> bool:
         return False
 
 
-def _connect(ip: str, username: str, encrypted_password: str):
-    password = decrypt_password(encrypted_password)
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(
-        ip, username=username, password=password,
-        timeout=SSH_TIMEOUT, banner_timeout=SSH_TIMEOUT,
-        auth_timeout=SSH_TIMEOUT,
-        look_for_keys=False,   # skip SSH key auth — use password only
-        allow_agent=False,     # skip SSH agent — use password only
-    )
-    transport = client.get_transport()
-    if transport is None or not transport.is_active():
-        client.close()
-        raise paramiko.SSHException("Transport not active after connect")
-    return client, password
+def _run_ssh(ip: str, username: str, password: str, command: str):
+    """Run an SSH command via sshpass. Returns (connected, output, error_hint)."""
+    sp = shutil.which("sshpass")
+    if not sp:
+        return False, "", "sshpass not installed — run: sudo apt install sshpass"
+
+    cmd = [sp, "-p", password, "ssh"] + _SSH_OPTS + [f"{username}@{ip}", command]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=CMD_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        return False, "", "SSH command timed out"
+
+    out = r.stdout.strip()
+    err = r.stderr.strip()
+
+    if r.returncode == 0:
+        return True, out, ""
+
+    # Exit 255 = SSH-level failure (auth denied, connection error, etc.)
+    if r.returncode == 255:
+        if "Permission denied" in err or "Authentication failed" in err:
+            return False, "", "Authentication failed — wrong username or password"
+        if "Connection refused" in err:
+            return False, "", "Connection refused — SSH not running on port 22"
+        return False, "", err or "SSH connection failed"
+
+    # Non-zero exit but SSH connected — command itself returned non-zero
+    return True, out or err, ""
 
 
 def check_runner_status(ip: str, username: str, encrypted_password: str) -> dict:
     if not _tcp_reachable(ip):
         return {"connected": False, "running": False, "output": "Port 22 unreachable — check network/firewall"}
 
-    try:
-        client, _ = _connect(ip, username, encrypted_password)
-        try:
-            _, stdout, _ = client.exec_command(
-                "systemctl is-active gitlab-runner 2>/dev/null || gitlab-runner status 2>&1 | head -5",
-                timeout=CMD_TIMEOUT,
-            )
-            output = stdout.read().decode().strip()
-            running = output.lower() == "active" or "running" in output.lower()
-            return {"connected": True, "running": running, "output": output}
-        finally:
-            client.close()
-    except paramiko.AuthenticationException:
-        return {"connected": False, "running": False, "output": "Authentication failed — wrong username or password"}
-    except (paramiko.SSHException, socket.timeout, TimeoutError) as e:
-        logger.warning("SSH check failed for %s: %s", ip, e)
-        return {"connected": False, "running": False, "output": "SSH handshake timed out — service may be unresponsive"}
-    except Exception as e:
-        logger.warning("SSH check failed for %s: %s", ip, e)
-        return {"connected": False, "running": False, "output": str(e)}
+    password = decrypt_password(encrypted_password)
+    connected, output, err = _run_ssh(
+        ip, username, password,
+        "systemctl is-active gitlab-runner 2>/dev/null || gitlab-runner status 2>&1 | head -5"
+    )
+
+    if not connected:
+        return {"connected": False, "running": False, "output": err}
+
+    running = output.lower() == "active" or "running" in output.lower()
+    return {"connected": True, "running": running, "output": output}
 
 
 def restart_runner(ip: str, username: str, encrypted_password: str) -> dict:
     if not _tcp_reachable(ip):
         return {"success": False, "output": "Port 22 unreachable — cannot connect"}
 
-    try:
-        client, password = _connect(ip, username, encrypted_password)
-        try:
-            cmd = (
-                f"echo {shlex.quote(password)} | sudo -S systemctl restart gitlab-runner 2>&1 || "
-                f"echo {shlex.quote(password)} | sudo -S service gitlab-runner restart 2>&1"
-            )
-            stdin, stdout, _ = client.exec_command(cmd, timeout=CMD_TIMEOUT)
-            stdin.channel.shutdown_write()
-            output = stdout.read().decode().strip()
-            return {"success": True, "output": output or "Runner restarted successfully"}
-        finally:
-            client.close()
-    except paramiko.AuthenticationException:
-        return {"success": False, "output": "Authentication failed — wrong username or password"}
-    except Exception as e:
-        logger.warning("SSH restart failed for %s: %s", ip, e)
-        return {"success": False, "output": str(e)}
+    password = decrypt_password(encrypted_password)
+    cmd = (
+        f"echo {shlex.quote(password)} | sudo -S systemctl restart gitlab-runner 2>&1 || "
+        f"echo {shlex.quote(password)} | sudo -S service gitlab-runner restart 2>&1"
+    )
+    connected, output, err = _run_ssh(ip, username, password, cmd)
+
+    if not connected:
+        return {"success": False, "output": err}
+
+    return {"success": True, "output": output or "Runner restarted successfully"}
