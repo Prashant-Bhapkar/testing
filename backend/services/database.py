@@ -20,6 +20,10 @@ def get_pool() -> pg_pool.SimpleConnectionPool:
             user=POSTGRES_USER,
             password=POSTGRES_PASSWORD,
             dbname=POSTGRES_DB,
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5,
         )
     return _pool
 

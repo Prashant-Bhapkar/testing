@@ -112,7 +112,7 @@ def check_system(system_id: int, user=Depends(get_current_user)):
         cur.close()
         release_conn(conn)
 
-    ping_ok = ping_host(ip)
+    ping_ok = ping_host(ip, hostname=hostname)
     runner = check_runner_status(ip, username, encrypted_password, hostname=hostname)
     return {
         "ping": ping_ok,

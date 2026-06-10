@@ -24,13 +24,18 @@ def decrypt_password(encrypted: str) -> str:
     return _fernet().decrypt(encrypted.encode()).decode()
 
 
-def ping_host(ip: str) -> bool:
+def ping_host(ip: str, hostname: str = None) -> bool:
+    """Try ICMP ping on hostname first, then IP. Returns True if either responds."""
     flag = ["-n", "1", "-w", "2000"] if platform.system().lower() == "windows" else ["-c", "1", "-W", "2"]
-    try:
-        result = subprocess.run(["ping"] + flag + [ip], capture_output=True, timeout=5)
-        return result.returncode == 0
-    except Exception:
-        return False
+    targets = list(dict.fromkeys(t for t in [hostname, ip] if t))
+    for target in targets:
+        try:
+            result = subprocess.run(["ping"] + flag + [target], capture_output=True, timeout=5)
+            if result.returncode == 0:
+                return True
+        except Exception:
+            pass
+    return False
 
 
 def _tcp_reachable(ip: str, port: int = 22) -> bool:
