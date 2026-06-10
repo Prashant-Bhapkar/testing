@@ -101,19 +101,19 @@ def check_system(system_id: int, user=Depends(get_current_user)):
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT ip, username, encrypted_password FROM monitored_systems WHERE id = %s",
+            "SELECT ip, username, encrypted_password, hostname FROM monitored_systems WHERE id = %s",
             (system_id,),
         )
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="System not found")
-        ip, username, encrypted_password = row
+        ip, username, encrypted_password, hostname = row
     finally:
         cur.close()
         release_conn(conn)
 
     ping_ok = ping_host(ip)
-    runner = check_runner_status(ip, username, encrypted_password)
+    runner = check_runner_status(ip, username, encrypted_password, hostname=hostname)
     return {
         "ping": ping_ok,
         "runner_connected": runner["connected"],
@@ -130,17 +130,17 @@ def restart_system_runner(system_id: int, user=Depends(require_admin)):
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT ip, username, encrypted_password FROM monitored_systems WHERE id = %s",
+            "SELECT ip, username, encrypted_password, hostname FROM monitored_systems WHERE id = %s",
             (system_id,),
         )
         row = cur.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="System not found")
-        ip, username, encrypted_password = row
+        ip, username, encrypted_password, hostname = row
     finally:
         cur.close()
         release_conn(conn)
 
     logger.info("Restarting runner on %s, requested by %s", ip, user["sub"])
-    result = restart_runner(ip, username, encrypted_password)
+    result = restart_runner(ip, username, encrypted_password, hostname=hostname)
     return result
