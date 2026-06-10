@@ -1,13 +1,21 @@
+import asyncio
+import fcntl
 import json
 import logging
+import os
+import pty
+import struct
+import termios
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
+from config import JWT_SECRET, JWT_ALGORITHM
 from services.auth import get_current_user, require_admin
 from services.database import get_conn, release_conn
-from services.ssh_checker import encrypt_password, ping_host, check_runner_status, restart_runner, open_ssh_terminal
+from services.ssh_checker import encrypt_password, ping_host, check_runner_status, restart_runner, open_ssh_terminal, decrypt_password
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/systems", tags=["systems"])
@@ -215,3 +223,96 @@ def open_terminal(system_id: int, user=Depends(get_current_user)):
         release_conn(conn)
 
     return open_ssh_terminal(ip, username, encrypted_password, hostname=hostname)
+
+
+# ── Web terminal (WebSocket + PTY) ─────────────────────────────
+
+@router.websocket("/{system_id}/ws-terminal")
+async def ws_terminal(websocket: WebSocket, system_id: int, token: str = Query("")):
+    # Authenticate via query-param token (headers not available in WS)
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except JWTError:
+        await websocket.close(code=4401)
+        return
+
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT ip, username, encrypted_password, hostname FROM monitored_systems WHERE id = %s",
+            (system_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            await websocket.close(code=4404)
+            return
+        ip, username, encrypted_password, hostname = row
+    finally:
+        cur.close()
+        release_conn(conn)
+
+    target = hostname or ip
+    password = decrypt_password(encrypted_password)
+
+    await websocket.accept()
+
+    # Create a PTY pair and spawn SSH through it
+    master_fd, slave_fd = pty.openpty()
+    fcntl.ioctl(master_fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+
+    env = {**os.environ, "SSHPASS": password}
+    process = await asyncio.create_subprocess_exec(
+        "sshpass", "-e", "ssh",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "UserKnownHostsFile=/dev/null",
+        f"{username}@{target}",
+        stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        env=env,
+    )
+    os.close(slave_fd)
+
+    loop = asyncio.get_event_loop()
+
+    async def pty_to_ws():
+        """Read from PTY and send to browser."""
+        while True:
+            try:
+                data = await loop.run_in_executor(None, lambda: os.read(master_fd, 4096))
+                await websocket.send_bytes(data)
+            except (OSError, RuntimeError):
+                break
+
+    async def ws_to_pty():
+        """Receive from browser and write to PTY."""
+        while True:
+            try:
+                msg = await websocket.receive()
+                if msg["type"] == "websocket.disconnect":
+                    break
+                if msg.get("bytes"):
+                    os.write(master_fd, msg["bytes"])
+                elif msg.get("text"):
+                    try:
+                        data = json.loads(msg["text"])
+                        if data.get("type") == "resize":
+                            fcntl.ioctl(
+                                master_fd, termios.TIOCSWINSZ,
+                                struct.pack("HHHH", data["rows"], data["cols"], 0, 0),
+                            )
+                    except (json.JSONDecodeError, KeyError):
+                        os.write(master_fd, msg["text"].encode())
+            except (WebSocketDisconnect, RuntimeError):
+                break
+
+    try:
+        await asyncio.gather(pty_to_ws(), ws_to_pty())
+    finally:
+        try:
+            process.terminate()
+        except Exception:
+            pass
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass

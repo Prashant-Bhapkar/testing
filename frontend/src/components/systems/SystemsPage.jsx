@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import TerminalModal from './TerminalModal'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Server, Plus, Trash2, RefreshCw, CheckCircle, XCircle,
@@ -15,11 +16,12 @@ export default function SystemsPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
 
-  const [systems, setSystems]       = useState([])
-  const [loading, setLoading]       = useState(false)
-  const [showAdd, setShowAdd]       = useState(false)
-  const [editTarget, setEditTarget] = useState(null)  // system object being edited
-  const [statuses, setStatuses]     = useState({})   // { [id]: { ping, runner_connected, runner_running, runner_output, checking } }
+  const [systems, setSystems]         = useState([])
+  const [loading, setLoading]         = useState(false)
+  const [showAdd, setShowAdd]         = useState(false)
+  const [editTarget, setEditTarget]   = useState(null)
+  const [termTarget, setTermTarget]   = useState(null)  // system to open terminal for
+  const [statuses, setStatuses]       = useState({})   // { [id]: { ping, runner_connected, runner_running, runner_output, checking } }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,15 +67,6 @@ export default function SystemsPage() {
       toast('System updated', 'ok')
       setEditTarget(null)
       load()
-    } catch (e) {
-      toast(e.message, 'err')
-    }
-  }
-
-  async function openTerminal(id) {
-    try {
-      const d = await api.openTerminal(id)
-      toast(d.success ? 'SSH terminal opened' : d.message, d.success ? 'ok' : 'err')
     } catch (e) {
       toast(e.message, 'err')
     }
@@ -138,7 +131,7 @@ export default function SystemsPage() {
                   onCheck={() => checkSystem(sys.id)}
                   onRestart={() => restartRunner(sys.id)}
                   onDelete={() => deleteSystem(sys.id)}
-                  onTerminal={() => openTerminal(sys.id)}
+                  onTerminal={() => setTermTarget(sys)}
                   onEdit={() => setEditTarget(sys)}
                 />
               ))}
@@ -161,6 +154,9 @@ export default function SystemsPage() {
           onSave={(body) => saveEdit(editTarget.id, body)}
           toast={toast}
         />
+      )}
+      {termTarget && (
+        <TerminalModal sys={termTarget} onClose={() => setTermTarget(null)} />
       )}
     </div>
   )
