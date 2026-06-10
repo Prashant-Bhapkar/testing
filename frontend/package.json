@@ -12,7 +12,9 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.0",
     "lucide-react": "^0.441.0",
-    "axios": "^1.7.7"
+    "axios": "^1.7.7",
+    "@xterm/xterm": "^5.5.0",
+    "@xterm/addon-fit": "^0.10.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
