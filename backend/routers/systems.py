@@ -22,6 +22,15 @@ class SystemIn(BaseModel):
     extra_fields: Optional[dict] = {}
 
 
+class SystemUpdate(BaseModel):
+    runner_tags: str
+    hostname: Optional[str] = None
+    ip: str
+    username: str
+    password: Optional[str] = None   # blank = keep existing password
+    extra_fields: Optional[dict] = {}
+
+
 # ── List ───────────────────────────────────────────────────────
 
 @router.get("")
@@ -67,6 +76,46 @@ def add_system(body: SystemIn, user=Depends(require_admin)):
         conn.commit()
         logger.info("System added: id=%s ip=%s tags=%s by %s", new_id, body.ip, body.runner_tags, user["sub"])
         return {"id": new_id, "message": "System added"}
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        cur.close()
+        release_conn(conn)
+
+
+# ── Update ─────────────────────────────────────────────────────
+
+@router.put("/{system_id}")
+def update_system(system_id: int, body: SystemUpdate, user=Depends(require_admin)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        if body.password:
+            cur.execute("""
+                UPDATE monitored_systems
+                SET runner_tags=%s, hostname=%s, ip=%s, username=%s,
+                    encrypted_password=%s, extra_fields=%s
+                WHERE id=%s RETURNING id
+            """, (
+                body.runner_tags, body.hostname, body.ip, body.username,
+                encrypt_password(body.password),
+                json.dumps(body.extra_fields or {}), system_id,
+            ))
+        else:
+            cur.execute("""
+                UPDATE monitored_systems
+                SET runner_tags=%s, hostname=%s, ip=%s, username=%s, extra_fields=%s
+                WHERE id=%s RETURNING id
+            """, (
+                body.runner_tags, body.hostname, body.ip, body.username,
+                json.dumps(body.extra_fields or {}), system_id,
+            ))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="System not found")
+        conn.commit()
+        logger.info("System updated: id=%s by %s", system_id, user["sub"])
+        return {"message": "System updated"}
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))

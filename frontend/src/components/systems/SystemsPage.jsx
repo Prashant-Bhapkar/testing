@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Server, Plus, Trash2, RefreshCw, CheckCircle, XCircle,
   Wifi, WifiOff, RotateCcw, X, FolderOpen, MessageSquare,
-  ShieldCheck, Link2, LogOut, Loader, Terminal,
+  ShieldCheck, Link2, LogOut, Loader, Terminal, Pencil,
 } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -18,6 +18,7 @@ export default function SystemsPage() {
   const [systems, setSystems]       = useState([])
   const [loading, setLoading]       = useState(false)
   const [showAdd, setShowAdd]       = useState(false)
+  const [editTarget, setEditTarget] = useState(null)  // system object being edited
   const [statuses, setStatuses]     = useState({})   // { [id]: { ping, runner_connected, runner_running, runner_output, checking } }
 
   const load = useCallback(async () => {
@@ -55,6 +56,17 @@ export default function SystemsPage() {
       toast(e.message, 'err')
     } finally {
       setStatuses(s => ({ ...s, [id]: { ...s[id], restarting: false } }))
+    }
+  }
+
+  async function saveEdit(id, body) {
+    try {
+      await api.updateSystem(id, body)
+      toast('System updated', 'ok')
+      setEditTarget(null)
+      load()
+    } catch (e) {
+      toast(e.message, 'err')
     }
   }
 
@@ -127,6 +139,7 @@ export default function SystemsPage() {
                   onRestart={() => restartRunner(sys.id)}
                   onDelete={() => deleteSystem(sys.id)}
                   onTerminal={() => openTerminal(sys.id)}
+                  onEdit={() => setEditTarget(sys)}
                 />
               ))}
             </div>
@@ -141,13 +154,21 @@ export default function SystemsPage() {
           toast={toast}
         />
       )}
+      {editTarget && (
+        <EditSystemModal
+          sys={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSave={(body) => saveEdit(editTarget.id, body)}
+          toast={toast}
+        />
+      )}
     </div>
   )
 }
 
 // ── System Card ────────────────────────────────────────────────
 
-function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerminal }) {
+function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerminal, onEdit }) {
   const tags = sys.runner_tags ? sys.runner_tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
   return (
@@ -161,17 +182,18 @@ function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerm
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onTerminal}
-            title="Open SSH terminal"
-            className="text-muted hover:text-primary transition-colors"
-          >
+          <button onClick={onTerminal} title="Open SSH terminal" className="text-muted hover:text-primary transition-colors">
             <Terminal size={14} />
           </button>
           {isAdmin && (
-            <button onClick={onDelete} className="text-muted hover:text-danger transition-colors">
-              <Trash2 size={14} />
-            </button>
+            <>
+              <button onClick={onEdit} title="Edit system" className="text-muted hover:text-warning transition-colors">
+                <Pencil size={14} />
+              </button>
+              <button onClick={onDelete} title="Delete system" className="text-muted hover:text-danger transition-colors">
+                <Trash2 size={14} />
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -312,6 +334,67 @@ function AddSystemModal({ onClose, onSuccess, toast }) {
     </div>
   )
 }
+
+// ── Edit System Modal ──────────────────────────────────────────
+
+function EditSystemModal({ sys, onClose, onSave, toast }) {
+  const [form, setForm] = useState({
+    runner_tags: sys.runner_tags || '',
+    hostname:    sys.hostname    || '',
+    ip:          sys.ip          || '',
+    username:    sys.username    || '',
+    password:    '',   // blank = keep existing
+    extra_fields: sys.extra_fields || {},
+  })
+  const [saving, setSaving] = useState(false)
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  async function submit(e) {
+    e.preventDefault()
+    if (!form.ip || !form.username || !form.runner_tags) {
+      toast('Runner tags, IP and username are required', 'err')
+      return
+    }
+    setSaving(true)
+    try {
+      await onSave(form)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-surface border border-border rounded-2xl w-[460px] shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <span className="font-bold text-text">Edit System</span>
+          <button onClick={onClose} className="text-muted hover:text-text"><X size={16} /></button>
+        </div>
+        <form onSubmit={submit} className="p-5 flex flex-col gap-3">
+          <Field label="Runner Tags *" placeholder="e.g. kineto, cicd-groups" value={form.runner_tags} onChange={v => set('runner_tags', v)} />
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Hostname" placeholder="Ph3Jxxxx" value={form.hostname} onChange={v => set('hostname', v)} />
+            <Field label="IP Address *" placeholder="10.x.x.x" value={form.ip} onChange={v => set('ip', v)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Username *" placeholder="user" value={form.username} onChange={v => set('username', v)} />
+            <Field label="New Password" placeholder="Leave blank to keep existing" type="password" value={form.password} onChange={v => set('password', v)} />
+          </div>
+          <div className="flex gap-3 mt-1">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-semibold text-subtle hover:bg-card">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 btn-primary text-sm font-semibold disabled:opacity-60">
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 
 function Field({ label, placeholder, value, onChange, type = 'text' }) {
   return (
