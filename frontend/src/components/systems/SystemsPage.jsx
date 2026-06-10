@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Server, Plus, Trash2, RefreshCw, CheckCircle, XCircle,
   Wifi, WifiOff, RotateCcw, X, FolderOpen, MessageSquare,
-  ShieldCheck, Link2, LogOut, Loader,
+  ShieldCheck, Link2, LogOut, Loader, Terminal,
 } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -55,6 +55,15 @@ export default function SystemsPage() {
       toast(e.message, 'err')
     } finally {
       setStatuses(s => ({ ...s, [id]: { ...s[id], restarting: false } }))
+    }
+  }
+
+  async function openTerminal(id) {
+    try {
+      const d = await api.openTerminal(id)
+      toast(d.success ? 'SSH terminal opened' : d.message, d.success ? 'ok' : 'err')
+    } catch (e) {
+      toast(e.message, 'err')
     }
   }
 
@@ -117,6 +126,7 @@ export default function SystemsPage() {
                   onCheck={() => checkSystem(sys.id)}
                   onRestart={() => restartRunner(sys.id)}
                   onDelete={() => deleteSystem(sys.id)}
+                  onTerminal={() => openTerminal(sys.id)}
                 />
               ))}
             </div>
@@ -137,7 +147,7 @@ export default function SystemsPage() {
 
 // ── System Card ────────────────────────────────────────────────
 
-function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete }) {
+function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerminal }) {
   const tags = sys.runner_tags ? sys.runner_tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
   return (
@@ -150,11 +160,20 @@ function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete }) {
             {sys.hostname || sys.ip}
           </span>
         </div>
-        {isAdmin && (
-          <button onClick={onDelete} className="text-muted hover:text-danger transition-colors shrink-0">
-            <Trash2 size={14} />
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onTerminal}
+            title="Open SSH terminal"
+            className="text-muted hover:text-primary transition-colors"
+          >
+            <Terminal size={14} />
           </button>
-        )}
+          {isAdmin && (
+            <button onClick={onDelete} className="text-muted hover:text-danger transition-colors">
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Info */}

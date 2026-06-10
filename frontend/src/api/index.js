@@ -145,6 +145,7 @@ export const api = {
   deleteSystem:  (id)   => request(`/systems/${id}`, { method: 'DELETE' }),
   checkSystem:   (id)   => request(`/systems/${id}/check`),
   restartRunner: (id)   => request(`/systems/${id}/restart`, { method: 'POST' }),
+  openTerminal:  (id)   => request(`/systems/${id}/terminal`, { method: 'POST' }),
 
   // ── Links ─────────────────────────────────────────────────────
   listLinks:  ()     => request('/links'),

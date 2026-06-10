@@ -135,6 +135,42 @@ def _run_ssh(target: str, username: str, password: str, command: str):
         return False, "", str(e)
 
 
+def open_ssh_terminal(ip: str, username: str, encrypted_password: str, hostname: str = None) -> dict:
+    """Spawn a terminal window on the local machine with an SSH session already logged in."""
+    import os
+    target = hostname or ip
+    ssh_target = f"{username}@{target}"
+    # Keep terminal open after SSH exits so the user can see any errors
+    shell_cmd = (
+        f"sshpass -e ssh -o StrictHostKeyChecking=no {ssh_target}; "
+        f"echo ''; echo '--- Session ended ---'; read -p 'Press Enter to close'"
+    )
+
+    env = os.environ.copy()
+    env["SSHPASS"] = decrypt_password(encrypted_password)
+    if "DISPLAY" not in env:
+        env["DISPLAY"] = ":0"
+
+    # Try common terminal emulators in order
+    terminal_cmds = [
+        ["gnome-terminal", "--", "bash", "-c", shell_cmd],
+        ["xfce4-terminal", "--command", f"bash -c {shlex.quote(shell_cmd)}"],
+        ["konsole", "-e", "bash", "-c", shell_cmd],
+        ["xterm", "-e", f"bash -c {shlex.quote(shell_cmd)}"],
+        ["lxterminal", "-e", f"bash -c {shlex.quote(shell_cmd)}"],
+    ]
+
+    for cmd in terminal_cmds:
+        try:
+            subprocess.Popen(cmd, env=env, start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"success": True, "message": f"Terminal opened for {target}"}
+        except FileNotFoundError:
+            continue
+
+    return {"success": False, "message": "No terminal emulator found — install gnome-terminal or xterm"}
+
+
 def check_runner_status(ip: str, username: str, encrypted_password: str, hostname: str = None) -> dict:
     # Use hostname when available so ~/.ssh/config (ProxyJump etc.) applies
     target = hostname or ip

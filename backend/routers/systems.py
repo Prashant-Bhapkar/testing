@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from services.auth import get_current_user, require_admin
 from services.database import get_conn, release_conn
-from services.ssh_checker import encrypt_password, ping_host, check_runner_status, restart_runner
+from services.ssh_checker import encrypt_password, ping_host, check_runner_status, restart_runner, open_ssh_terminal
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/systems", tags=["systems"])
@@ -144,3 +144,25 @@ def restart_system_runner(system_id: int, user=Depends(require_admin)):
     logger.info("Restarting runner on %s, requested by %s", ip, user["sub"])
     result = restart_runner(ip, username, encrypted_password, hostname=hostname)
     return result
+
+
+# ── Open SSH terminal ──────────────────────────────────────────
+
+@router.post("/{system_id}/terminal")
+def open_terminal(system_id: int, user=Depends(get_current_user)):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT ip, username, encrypted_password, hostname FROM monitored_systems WHERE id = %s",
+            (system_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="System not found")
+        ip, username, encrypted_password, hostname = row
+    finally:
+        cur.close()
+        release_conn(conn)
+
+    return open_ssh_terminal(ip, username, encrypted_password, hostname=hostname)
