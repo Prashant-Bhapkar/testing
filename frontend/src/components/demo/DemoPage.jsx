@@ -4,8 +4,9 @@ import {
   ClipboardList, Plus, Pencil, Trash2, Eye, X,
   Bold, Italic, List, ListOrdered,
   FolderOpen, MessageSquare, Server, Link2, ShieldCheck, LogOut,
-  CalendarDays, UserRound, Wrench, ArrowRight,
+  CalendarDays, UserRound, Wrench, ArrowRight, KeyRound,
 } from 'lucide-react'
+import ChangePasswordModal from '../auth/ChangePasswordModal'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -390,6 +391,7 @@ function DemoCard({ demo, isAdmin, onView, onEdit, onDelete }) {
 function DemoSidebar() {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [showChangePwd, setShowChangePwd] = useState(false)
 
   const navLinks = [
     { to: '/',        icon: <FolderOpen size={15} />,    label: 'Docs',   desc: 'Browse & manage files' },
@@ -445,10 +447,15 @@ function DemoSidebar() {
             <div className="text-[11px] text-muted capitalize">{user?.role}</div>
           </div>
         </div>
+        <button onClick={() => setShowChangePwd(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
+          <KeyRound size={15} /> Change Password
+        </button>
         <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
           <LogOut size={15} /> Sign Out
         </button>
       </div>
+
+      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }

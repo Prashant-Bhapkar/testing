@@ -1,11 +1,14 @@
-import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut, Server, Link2, ClipboardList } from 'lucide-react'
+import { useState } from 'react'
+import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut, Server, Link2, ClipboardList, KeyRound } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
+import ChangePasswordModal from '../auth/ChangePasswordModal'
 
 export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefresh }) {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [showChangePwd, setShowChangePwd] = useState(false)
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
@@ -84,8 +87,11 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
             <div className="text-[11px] text-muted capitalize">{user?.role}</div>
           </div>
         </div>
-        <NavItem icon={<LogOut size={15} />} label="Sign Out" onClick={logout} />
+        <NavItem icon={<KeyRound size={15} />} label="Change Password" onClick={() => setShowChangePwd(true)} />
+        <NavItem icon={<LogOut size={15} />}   label="Sign Out"        onClick={logout} />
       </div>
+
+      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }

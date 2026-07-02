@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import TerminalModal from './TerminalModal'
+import ChangePasswordModal from '../auth/ChangePasswordModal'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Server, Plus, Trash2, RefreshCw, CheckCircle, XCircle,
   Wifi, WifiOff, RotateCcw, X, FolderOpen, MessageSquare,
-  ShieldCheck, Link2, LogOut, Loader, Terminal, Pencil, ClipboardList,
+  ShieldCheck, Link2, LogOut, Loader, Terminal, Pencil, ClipboardList, KeyRound,
 } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -412,6 +413,7 @@ function Field({ label, placeholder, value, onChange, type = 'text' }) {
 function SystemsSidebar() {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const [showChangePwd, setShowChangePwd] = useState(false)
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
@@ -440,10 +442,15 @@ function SystemsSidebar() {
             <div className="text-[11px] text-muted capitalize">{user?.role}</div>
           </div>
         </div>
+        <button onClick={() => setShowChangePwd(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
+          <KeyRound size={15} /> Change Password
+        </button>
         <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
           <LogOut size={15} /> Sign Out
         </button>
       </div>
+
+      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }
