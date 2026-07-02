@@ -1,0 +1,209 @@
+# ============================================================
+#  AppEngg — Kubernetes Manifests
+#  Fill every XXXXXXXX placeholder before applying.
+#
+#  Apply order:
+#    kubectl apply -f deployment.yml
+# ============================================================
+
+# ── Secret (base64-encode all values) ───────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: appeng-secret
+  labels:
+    k8s-app: appeng
+type: Opaque
+stringData:                       # plain-text → k8s base64-encodes automatically
+  # MinIO
+  MINIO_ENDPOINT:   "XXXXXXXX"   # e.g. minio.example.com:9000
+  MINIO_ACCESS_KEY: "XXXXXXXX"
+  MINIO_SECRET_KEY: "XXXXXXXX"
+  MINIO_BUCKET:     "XXXXXXXX"
+  MINIO_SECURE:     "true"       # "false" if self-signed / http
+
+  # Qdrant
+  QDRANT_URL: "XXXXXXXX"         # e.g. http://qdrant-service:6333
+
+  # LLM / AI
+  AI_BASE_URL:      "XXXXXXXX"   # e.g. http://ollama-service:11434
+  OPENAI_API_KEY:   "XXXXXXXX"   # leave empty if not needed
+  EMBEDDING_MODEL:  "XXXXXXXX"   # e.g. nomic-embed-text
+  CHAT_MODEL:       "XXXXXXXX"   # e.g. llama3
+  COLLECTION_NAME:  "documents"
+
+  # PostgreSQL
+  POSTGRES_HOST:     "XXXXXXXX"  # e.g. postgres-service or external host
+  POSTGRES_PORT:     "5432"
+  POSTGRES_USER:     "XXXXXXXX"
+  POSTGRES_PASSWORD: "XXXXXXXX"
+  POSTGRES_DB:       "XXXXXXXX"
+
+  # JWT
+  JWT_SECRET:          "XXXXXXXX"  # long random string
+  JWT_EXPIRE_MINUTES:  "480"
+
+  # CORS — comma-separated origins the frontend is served from
+  ALLOWED_ORIGINS: "http://XXXXXXXX,https://XXXXXXXX"
+
+---
+# ── Backend Deployment ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appeng-backend
+  labels:
+    k8s-app: appeng-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: appeng-backend
+  template:
+    metadata:
+      labels:
+        k8s-app: appeng-backend
+    spec:
+      imagePullSecrets:
+        - name: XXXXXXXX          # your registry pull-secret name
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+        - name: appeng-backend
+          image: XXXXXXXX/appeng-backend:latest   # your registry/image:tag
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: appeng-secret
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+---
+# ── Backend Service ──────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: appeng-backend
+  labels:
+    k8s-app: appeng-backend
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: appeng-backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+
+---
+# ── Frontend Deployment ──────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: appeng-frontend
+  labels:
+    k8s-app: appeng-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: appeng-frontend
+  template:
+    metadata:
+      labels:
+        k8s-app: appeng-frontend
+    spec:
+      imagePullSecrets:
+        - name: XXXXXXXX          # your registry pull-secret name
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+        - name: appeng-frontend
+          image: XXXXXXXX/appeng-frontend:latest  # your registry/image:tag
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+---
+# ── Frontend Service ─────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: appeng-frontend
+  labels:
+    k8s-app: appeng-frontend
+spec:
+  type: ClusterIP
+  selector:
+    k8s-app: appeng-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+
+---
+# ── Ingress ──────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: appeng-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    # WebSocket support (for terminal feature)
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: XXXXXXXX              # e.g. appeng.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: appeng-frontend
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - XXXXXXXX                # same host as above
+      secretName: XXXXXXXX        # TLS secret name (cert-manager or manual)
