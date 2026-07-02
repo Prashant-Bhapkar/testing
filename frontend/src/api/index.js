@@ -152,4 +152,17 @@ export const api = {
   listLinks:  ()     => request('/links'),
   addLink:    (body) => request('/links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   deleteLink: (id)   => request(`/links/${id}`, { method: 'DELETE' }),
+
+  // ── Demo Feedback ──────────────────────────────────────────────
+  listDemos: (customer, month) => {
+    const p = new URLSearchParams()
+    if (customer) p.set('customer', customer)
+    if (month)    p.set('month', month)
+    const q = p.toString()
+    return request(`/demo${q ? '?' + q : ''}`)
+  },
+  listDemoCustomers: () => request('/demo/customers'),
+  createDemo: (body) => request('/demo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  updateDemo: (id, body) => request(`/demo/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  deleteDemo: (id) => request(`/demo/${id}`, { method: 'DELETE' }),
 }

@@ -8,6 +8,7 @@ import LoginPage from './components/auth/LoginPage'
 import AdminPanel from './components/admin/AdminPanel'
 import SystemsPage from './components/systems/SystemsPage'
 import LinksPage from './components/links/LinksPage'
+import DemoPage from './components/demo/DemoPage'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth()
@@ -33,6 +34,7 @@ export default function App() {
             <Route path="/chat"   element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
             <Route path="/systems" element={<ProtectedRoute><SystemsPage /></ProtectedRoute>} />
             <Route path="/links"  element={<ProtectedRoute><LinksPage /></ProtectedRoute>} />
+            <Route path="/demo"   element={<ProtectedRoute><DemoPage /></ProtectedRoute>} />
             <Route path="/admin"  element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
             <Route path="*"       element={<Navigate to="/" replace />} />
           </Routes>

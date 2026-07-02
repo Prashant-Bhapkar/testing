@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../context/ThemeContext'
 import MessageList from './MessageList'
 import InputArea from './InputArea'
-import { Trash2, FolderOpen, MessageSquare, PlusCircle, ShieldCheck, LogOut, Server, Link2 } from 'lucide-react'
+import { Trash2, FolderOpen, MessageSquare, PlusCircle, ShieldCheck, LogOut, Server, Link2, ClipboardList } from 'lucide-react'
 
 export default function ChatPage() {
   const toast = useToast()
@@ -83,6 +83,7 @@ export default function ChatPage() {
           <FeatureLink to="/chat"   icon={<MessageSquare size={15} />} label="Search" desc="Ask questions on docs"   active={location.pathname === '/chat'} />
           <FeatureLink to="/systems" icon={<Server size={15} />}       label="Health" desc="Monitor GitLab runners"  active={location.pathname === '/systems'} />
           <FeatureLink to="/links"  icon={<Link2 size={15} />}         label="Links"  desc="Saved hyperlinks"        active={location.pathname === '/links'} />
+          <FeatureLink to="/demo"  icon={<ClipboardList size={15} />} label="Demos"  desc="Demo feedback tracker"   active={location.pathname === '/demo'} />
           {user?.role === 'admin' && (
             <FeatureLink to="/admin" icon={<ShieldCheck size={15} />} label="Admin" desc="Logs, health & config" active={location.pathname === '/admin'} />
           )}

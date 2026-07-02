@@ -107,6 +107,23 @@ def init_db():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS demo_feedback (
+                id SERIAL PRIMARY KEY,
+                customer_name VARCHAR(255) NOT NULL,
+                demo_start_date DATE NOT NULL,
+                demo_end_date DATE NOT NULL,
+                given_by VARCHAR(255) NOT NULL,
+                developer_support TEXT,
+                what_showcased TEXT,
+                customer_inputs TEXT,
+                improvement_suggestions TEXT,
+                other_suggestions TEXT,
+                confidence_rating INTEGER CHECK (confidence_rating BETWEEN 1 AND 10),
+                created_at TIMESTAMP DEFAULT NOW(),
+                updated_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
         cur.execute("SELECT COUNT(*) FROM users")
         if cur.fetchone()[0] == 0:
             cur.execute(

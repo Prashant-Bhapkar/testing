@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   Server, Plus, Trash2, RefreshCw, CheckCircle, XCircle,
   Wifi, WifiOff, RotateCcw, X, FolderOpen, MessageSquare,
-  ShieldCheck, Link2, LogOut, Loader, Terminal, Pencil,
+  ShieldCheck, Link2, LogOut, Loader, Terminal, Pencil, ClipboardList,
 } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -425,6 +425,7 @@ function SystemsSidebar() {
         <NavLink to="/chat"    icon={<MessageSquare size={15} />} label="Search"  desc="Ask questions on docs"   active={location.pathname === '/chat'} />
         <NavLink to="/systems" icon={<Server size={15} />}        label="Health"  desc="Monitor GitLab runners"  active={location.pathname === '/systems'} />
         <NavLink to="/links"   icon={<Link2 size={15} />}         label="Links"   desc="Saved hyperlinks"        active={location.pathname === '/links'} />
+        <NavLink to="/demo"    icon={<ClipboardList size={15} />} label="Demos"   desc="Demo feedback tracker"   active={location.pathname === '/demo'} />
         {user?.role === 'admin' && (
           <NavLink to="/admin" icon={<ShieldCheck size={15} />}   label="Admin"   desc="Logs, health & config"   active={location.pathname === '/admin'} />
         )}
