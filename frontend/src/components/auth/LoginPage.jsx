@@ -90,9 +90,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-muted mt-5">
-          Default: <span className="text-subtle">admin / admin123</span>
-        </p>
       </div>
     </div>
   )

@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, LogOut, Server, Link2, ClipboardList, KeyRound } from 'lucide-react'
+import { Home, Upload, FolderPlus, RefreshCw, MessageSquare, FolderOpen, ShieldCheck, Server, Link2, ClipboardList } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { ThemeToggle } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import ChangePasswordModal from '../auth/ChangePasswordModal'
+import UserMenu from '../shared/UserMenu'
 
 export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefresh }) {
   const location = useLocation()
-  const { user, logout } = useAuth()
-  const [showChangePwd, setShowChangePwd] = useState(false)
+  const { user } = useAuth()
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
@@ -80,20 +79,8 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
 
       {/* User info + logout */}
       <div className="px-3 py-3 border-t border-border">
-        <div className="flex items-center gap-2 px-2 py-1 mb-1">
-          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-            {user?.username?.[0]?.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-text truncate">{user?.username}</div>
-            <div className="text-[11px] text-muted capitalize">{user?.role}</div>
-          </div>
-        </div>
-        <NavItem icon={<KeyRound size={15} />} label="Change Password" onClick={() => setShowChangePwd(true)} />
-        <NavItem icon={<LogOut size={15} />}   label="Sign Out"        onClick={logout} />
+        <UserMenu />
       </div>
-
-      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }

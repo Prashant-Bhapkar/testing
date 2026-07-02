@@ -3,10 +3,10 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   ClipboardList, Plus, Pencil, Trash2, Eye, X,
   Bold, Italic, List, ListOrdered,
-  FolderOpen, MessageSquare, Server, Link2, ShieldCheck, LogOut,
-  CalendarDays, UserRound, Wrench, ArrowRight, KeyRound,
+  FolderOpen, MessageSquare, Server, Link2, ShieldCheck,
+  CalendarDays, UserRound, Wrench, ArrowRight,
 } from 'lucide-react'
-import ChangePasswordModal from '../auth/ChangePasswordModal'
+import UserMenu from '../shared/UserMenu'
 import Pagination from '../shared/Pagination'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -109,6 +109,59 @@ function RatingPicker({ value, onChange }) {
   )
 }
 
+// ── Tag Input ─────────────────────────────────────────────────
+
+function TagInput({ value, onChange, placeholder }) {
+  const [inputVal, setInputVal] = useState('')
+  const tags = value ? value.split(',').map(t => t.trim()).filter(Boolean) : []
+
+  function addTag(raw) {
+    const tag = raw.trim()
+    if (!tag || tags.includes(tag)) { setInputVal(''); return }
+    onChange([...tags, tag].join(', '))
+    setInputVal('')
+  }
+
+  function removeTag(i) {
+    onChange(tags.filter((_, idx) => idx !== i).join(', '))
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTag(inputVal) }
+    else if (e.key === 'Backspace' && !inputVal && tags.length > 0) removeTag(tags.length - 1)
+  }
+
+  function handleChange(e) {
+    const v = e.target.value
+    if (v.endsWith(',')) addTag(v.slice(0, -1))
+    else setInputVal(v)
+  }
+
+  return (
+    <div
+      className="flex flex-wrap gap-1.5 bg-card border border-border rounded-lg px-3 py-2 min-h-[38px] focus-within:border-primary/60 transition-colors cursor-text"
+      onClick={e => e.currentTarget.querySelector('input')?.focus()}
+    >
+      {tags.map((tag, i) => (
+        <span key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary text-xs font-medium">
+          {tag}
+          <button type="button" onClick={() => removeTag(i)} className="hover:text-danger transition-colors leading-none">
+            <X size={10} />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={inputVal}
+        onChange={handleChange}
+        onKeyDown={handleKeyDown}
+        placeholder={tags.length === 0 ? placeholder : 'Add more…'}
+        className="flex-1 bg-transparent text-sm text-text placeholder-muted outline-none min-w-[100px]"
+      />
+    </div>
+  )
+}
+
 // ── Form elements ─────────────────────────────────────────────
 
 function Label({ children, required }) {
@@ -182,7 +235,11 @@ function DemoModal({ demo, onClose, onSaved }) {
             </div>
             <div>
               <Label>Developer / Support</Label>
-              <FInput placeholder="Who prepared the demo" value={form.developer_support || ''} onChange={e => set('developer_support', e.target.value)} />
+              <TagInput
+                placeholder="Type name, press comma or Enter to add…"
+                value={form.developer_support || ''}
+                onChange={v => set('developer_support', v)}
+              />
             </div>
           </div>
 
@@ -261,7 +318,16 @@ function ViewModal({ demo, onClose, onEdit }) {
           <div className="grid grid-cols-2 gap-4 text-sm">
             <VField label="Demo Period" value={`${formatDate(demo.demo_start_date)} → ${formatDate(demo.demo_end_date)}`} />
             <VField label="Given By" value={demo.given_by} />
-            {demo.developer_support && <VField label="Developer / Support" value={demo.developer_support} />}
+            {demo.developer_support && (
+              <div>
+                <p className="text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">Developer / Support</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {demo.developer_support.split(',').map(t => t.trim()).filter(Boolean).map((t, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-primary/10 text-primary text-xs font-medium">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {demo.what_showcased && (
@@ -338,10 +404,14 @@ function DemoCard({ demo, onView, onEdit, onDelete }) {
           <span className="text-text truncate">{demo.given_by}</span>
         </div>
         {demo.developer_support && (
-          <div className="flex items-center gap-2 text-xs">
-            <Wrench size={11} className="text-muted shrink-0" />
-            <span className="text-muted font-medium w-12 shrink-0">Dev</span>
-            <span className="text-subtle truncate">{demo.developer_support}</span>
+          <div className="flex items-start gap-2 text-xs">
+            <Wrench size={11} className="text-muted shrink-0 mt-1" />
+            <span className="text-muted font-medium w-12 shrink-0 mt-0.5">Dev</span>
+            <div className="flex flex-wrap gap-1">
+              {demo.developer_support.split(',').map(t => t.trim()).filter(Boolean).map((t, i) => (
+                <span key={i} className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-medium">{t}</span>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -389,8 +459,7 @@ function DemoCard({ demo, onView, onEdit, onDelete }) {
 
 function DemoSidebar() {
   const location = useLocation()
-  const { user, logout } = useAuth()
-  const [showChangePwd, setShowChangePwd] = useState(false)
+  const { user } = useAuth()
 
   const navLinks = [
     { to: '/',        icon: <FolderOpen size={15} />,    label: 'Docs',   desc: 'Browse & manage files' },
@@ -437,24 +506,8 @@ function DemoSidebar() {
         )}
       </div>
       <div className="mt-auto px-3 py-3 border-t border-border">
-        <div className="flex items-center gap-2 px-2 py-1 mb-1">
-          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-            {user?.username?.[0]?.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-text truncate">{user?.username}</div>
-            <div className="text-[11px] text-muted capitalize">{user?.role}</div>
-          </div>
-        </div>
-        <button onClick={() => setShowChangePwd(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
-          <KeyRound size={15} /> Change Password
-        </button>
-        <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
-          <LogOut size={15} /> Sign Out
-        </button>
+        <UserMenu />
       </div>
-
-      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }

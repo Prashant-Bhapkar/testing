@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Link2, ExternalLink, Plus, Trash2, X,
-  FolderOpen, MessageSquare, ShieldCheck, Server, LogOut, ClipboardList, KeyRound,
+  FolderOpen, MessageSquare, ShieldCheck, Server, ClipboardList,
 } from 'lucide-react'
-import ChangePasswordModal from '../auth/ChangePasswordModal'
+import UserMenu from '../shared/UserMenu'
 import Pagination from '../shared/Pagination'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -24,6 +24,13 @@ const ENV_COLORS = {
 
 function envColor(env) {
   return ENV_COLORS[(env || '').toLowerCase()] || 'bg-primary/10 text-primary'
+}
+
+const ENV_BORDER = {
+  prod: 'border-l-red-500', production: 'border-l-red-500',
+  staging: 'border-l-yellow-500', stage: 'border-l-yellow-500',
+  dev: 'border-l-green-500', development: 'border-l-green-500',
+  qa: 'border-l-purple-500', test: 'border-l-purple-500',
 }
 
 const PAGE_SIZE = 20
@@ -175,40 +182,47 @@ function LinkCard({ link, onDelete }) {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  const accentBorder = ENV_BORDER[(link.env || '').toLowerCase()] || 'border-l-primary/50'
+
   return (
-    <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-2.5 hover:border-primary transition-colors group">
-      {/* Name + delete */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <Link2 size={14} className="text-primary shrink-0" />
-          <span className="text-sm font-bold text-text truncate">{link.name}</span>
+    <div className={`bg-surface border border-border border-l-4 ${accentBorder} rounded-xl flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all group`}>
+      {/* Header */}
+      <div className="p-4 pb-3 flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Link2 size={16} className="text-primary" />
         </div>
-        <button onClick={onDelete} className="text-muted hover:text-danger transition-colors shrink-0 opacity-0 group-hover:opacity-100">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold text-text truncate">{link.name}</div>
+          <div className="text-xs text-muted truncate mt-0.5" title={link.url}>{link.url}</div>
+        </div>
+        <button
+          onClick={onDelete}
+          className="text-muted hover:text-danger transition-colors shrink-0 opacity-0 group-hover:opacity-100 mt-0.5"
+        >
           <Trash2 size={13} />
         </button>
       </div>
 
-      {/* URL */}
-      <div className="text-xs text-muted truncate" title={link.url}>{link.url}</div>
-
       {/* Badges */}
-      <div className="flex flex-wrap gap-1.5">
-        {link.env && (
-          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium uppercase ${envColor(link.env)}`}>
-            {link.env}
-          </span>
-        )}
-        {link.tag && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full bg-card text-muted border border-border font-medium">
-            {link.tag}
-          </span>
-        )}
-      </div>
+      {(link.env || link.tag) && (
+        <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+          {link.env && (
+            <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-semibold uppercase tracking-wide ${envColor(link.env)}`}>
+              {link.env}
+            </span>
+          )}
+          {link.tag && (
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-card text-subtle border border-border font-medium">
+              # {link.tag}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Open button */}
       <button
         onClick={openLink}
-        className="mt-auto flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary/20 transition-colors"
+        className="mx-4 mb-4 mt-auto flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-semibold hover:bg-primary hover:text-white transition-colors"
       >
         <ExternalLink size={12} /> Open Link
       </button>
@@ -286,8 +300,7 @@ function Field({ label, placeholder, value, onChange }) {
 
 function LinksSidebar() {
   const location = useLocation()
-  const { user, logout } = useAuth()
-  const [showChangePwd, setShowChangePwd] = useState(false)
+  const { user } = useAuth()
 
   return (
     <aside className="w-[240px] min-w-[240px] bg-surface border-r border-border flex flex-col">
@@ -309,24 +322,8 @@ function LinksSidebar() {
         )}
       </div>
       <div className="mt-auto px-3 py-3 border-t border-border">
-        <div className="flex items-center gap-2 px-2 py-1 mb-1">
-          <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">
-            {user?.username?.[0]?.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold text-text truncate">{user?.username}</div>
-            <div className="text-[11px] text-muted capitalize">{user?.role}</div>
-          </div>
-        </div>
-        <button onClick={() => setShowChangePwd(true)} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
-          <KeyRound size={15} /> Change Password
-        </button>
-        <button onClick={logout} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors">
-          <LogOut size={15} /> Sign Out
-        </button>
+        <UserMenu />
       </div>
-
-      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </aside>
   )
 }

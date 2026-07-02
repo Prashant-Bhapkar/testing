@@ -6,14 +6,13 @@ import { useAuth } from '../../context/AuthContext'
 import { ThemeToggle } from '../../context/ThemeContext'
 import MessageList from './MessageList'
 import InputArea from './InputArea'
-import { Trash2, FolderOpen, MessageSquare, PlusCircle, ShieldCheck, LogOut, Server, Link2, ClipboardList, KeyRound } from 'lucide-react'
-import ChangePasswordModal from '../auth/ChangePasswordModal'
+import { Trash2, FolderOpen, MessageSquare, PlusCircle, ShieldCheck, Server, Link2, ClipboardList } from 'lucide-react'
+import UserMenu from '../shared/UserMenu'
 
 export default function ChatPage() {
   const toast = useToast()
   const location = useLocation()
-  const { user, logout } = useAuth()
-  const [showChangePwd, setShowChangePwd] = useState(false)
+  const { user } = useAuth()
   const [messages, setMessages] = useState([])
   const [history, setHistory]   = useState([])
   const [sessions, setSessions] = useState([])
@@ -131,25 +130,11 @@ export default function ChatPage() {
           >
             <Trash2 size={15} /> Clear History
           </button>
-          <button
-            onClick={() => setShowChangePwd(true)}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-subtle hover:bg-card hover:text-text transition-colors"
-          >
-            <KeyRound size={15} /> Change Password
-          </button>
-          <div className="flex items-center gap-2 px-3 py-2 mt-1">
-            <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-[10px] font-bold shrink-0">
-              {user?.username?.[0]?.toUpperCase()}
-            </div>
-            <span className="text-xs text-subtle truncate flex-1">{user?.username}</span>
-            <button onClick={logout} title="Sign out" className="text-muted hover:text-danger transition-colors">
-              <LogOut size={13} />
-            </button>
+          <div className="mt-1">
+            <UserMenu />
           </div>
         </div>
       </aside>
-
-      {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
 
       {/* Main */}
       <main className="flex-1 flex flex-col overflow-hidden">
