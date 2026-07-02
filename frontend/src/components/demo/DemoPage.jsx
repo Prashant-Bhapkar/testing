@@ -7,6 +7,7 @@ import {
   CalendarDays, UserRound, Wrench, ArrowRight, KeyRound,
 } from 'lucide-react'
 import ChangePasswordModal from '../auth/ChangePasswordModal'
+import Pagination from '../shared/Pagination'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -31,6 +32,8 @@ function ratingColor(r) {
   if (r <= 6) return 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20'
   return 'bg-green-500/15 text-green-400 border border-green-500/20'
 }
+
+const PAGE_SIZE = 15
 
 const EMPTY = {
   customer_name: '', demo_start_date: '', demo_end_date: '',
@@ -468,6 +471,7 @@ export default function DemoPage() {
   const [showAdd, setShowAdd]       = useState(false)
   const [editTarget, setEditTarget] = useState(null)
   const [viewTarget, setViewTarget] = useState(null)
+  const [page, setPage]             = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -478,6 +482,7 @@ export default function DemoPage() {
       ])
       setDemos(d.demos)
       setCustomers(c.customers)
+      setPage(1)
     } catch (e) {
       toast(e.message, 'err')
     } finally {
@@ -567,17 +572,24 @@ export default function DemoPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {demos.map(d => (
-                <DemoCard
-                  key={d.id}
-                  demo={d}
-                  onView={setViewTarget}
-                  onEdit={demo => { setEditTarget(demo); setShowAdd(false) }}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {demos.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(d => (
+                  <DemoCard
+                    key={d.id}
+                    demo={d}
+                    onView={setViewTarget}
+                    onEdit={demo => { setEditTarget(demo); setShowAdd(false) }}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+              <Pagination
+                page={page}
+                totalPages={Math.ceil(demos.length / PAGE_SIZE)}
+                onChange={setPage}
+              />
+            </>
           )}
         </div>
       </main>

@@ -5,6 +5,7 @@ import {
   FolderOpen, MessageSquare, ShieldCheck, Server, LogOut, ClipboardList, KeyRound,
 } from 'lucide-react'
 import ChangePasswordModal from '../auth/ChangePasswordModal'
+import Pagination from '../shared/Pagination'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
@@ -25,6 +26,8 @@ function envColor(env) {
   return ENV_COLORS[(env || '').toLowerCase()] || 'bg-primary/10 text-primary'
 }
 
+const PAGE_SIZE = 20
+
 export default function LinksPage() {
   const toast = useToast()
   const { user } = useAuth()
@@ -33,12 +36,14 @@ export default function LinksPage() {
   const [loading, setLoading] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [filter, setFilter]   = useState({ env: '', tag: '' })
+  const [page, setPage]       = useState(1)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const d = await api.listLinks()
       setLinks(d.links)
+      setPage(1)
     } catch (e) {
       toast(e.message, 'err')
     } finally {
@@ -47,6 +52,7 @@ export default function LinksPage() {
   }, [toast])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { setPage(1) }, [filter])
 
   async function deleteLink(id) {
     try {
@@ -133,11 +139,18 @@ export default function LinksPage() {
               )}
             </div>
           ) : (
-            <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-              {visible.map(link => (
-                <LinkCard key={link.id} link={link} onDelete={() => deleteLink(link.id)} />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                {visible.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(link => (
+                  <LinkCard key={link.id} link={link} onDelete={() => deleteLink(link.id)} />
+                ))}
+              </div>
+              <Pagination
+                page={page}
+                totalPages={Math.ceil(visible.length / PAGE_SIZE)}
+                onChange={setPage}
+              />
+            </>
           )}
         </div>
       </div>
