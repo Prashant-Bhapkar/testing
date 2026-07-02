@@ -16,20 +16,23 @@ def chat(body: ChatRequest):
         if not body.question.strip():
             raise HTTPException(status_code=400, detail="Question cannot be empty")
 
-        vector  = embedding.get_single_embedding(body.question)
-        results = embedding.search_qdrant(vector)
+        vector       = embedding.get_single_embedding(body.question)
+        results      = embedding.search_qdrant(vector)
+        demo_results = embedding.search_demo_qdrant(vector)
 
-        if not results:
-            return {"answer": "No documents found in the knowledge base. Please upload some documents first.",
-                    "sources": [], "chunks_found": 0}
+        if not results and not demo_results:
+            return {
+                "answer": "No documents or demo records found in the knowledge base. Please upload some documents or add demo feedback first.",
+                "sources": [], "chunks_found": 0,
+            }
 
-        answer = embedding.ask_ai(body.question, results, body.history)
+        answer = embedding.ask_ai(body.question, results, body.history, demo_results)
 
-        # Deduplicate by file, collect unique pages, keep best score
+        # Deduplicate document sources by file
         seen_files: dict = {}
         for r in results:
-            src  = r["payload"].get("source", "unknown")
-            page = r["payload"].get("page")
+            src   = r["payload"].get("source", "unknown")
+            page  = r["payload"].get("page")
             score = round(r["score"], 3)
             if src not in seen_files:
                 seen_files[src] = {

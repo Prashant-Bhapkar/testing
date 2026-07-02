@@ -232,25 +232,63 @@ def search_qdrant(vector: list) -> list:
     return r.json().get("result", [])
 
 
-def ask_ai(question: str, chunks: list, history: list) -> str:
-    context = "\n\n---\n\n".join(
-        f"[Source: {c['payload']['source']} | Page: {c['payload'].get('page', '?')} | "
-        f"Chunk {c['payload'].get('chunk_index', 0)} | Score: {round(c['score'], 3)}]\n{c['payload']['text']}"
-        for c in chunks
-    )
+def search_demo_qdrant(vector: list) -> list:
+    try:
+        r = requests.post(
+            f"{QDRANT_URL}/collections/demo_feedback/points/search",
+            headers={"Content-Type": "application/json"},
+            json={"vector": vector, "limit": 3, "with_payload": True},
+            verify=False, timeout=15,
+        )
+        r.raise_for_status()
+        return r.json().get("result", [])
+    except Exception:
+        return []
+
+
+def ask_ai(question: str, chunks: list, history: list, demo_results: list = None) -> str:
+    context_parts = []
+
+    if chunks:
+        doc_ctx = "\n\n---\n\n".join(
+            f"[Source: {c['payload']['source']} | Page: {c['payload'].get('page', '?')} | "
+            f"Chunk {c['payload'].get('chunk_index', 0)} | Score: {round(c['score'], 3)}]\n{c['payload']['text']}"
+            for c in chunks
+        )
+        context_parts.append(f"=== DOCUMENT SOURCES ===\n{doc_ctx}")
+
+    if demo_results:
+        demo_lines = []
+        for d in demo_results:
+            p = d["payload"]
+            demo_lines.append(
+                f"[Customer: {p.get('customer_name', '?')} | "
+                f"Period: {p.get('demo_start_date', '?')} → {p.get('demo_end_date', '?')} | "
+                f"Presented by: {p.get('given_by', '?')} | "
+                f"Dev/Support: {p.get('developer_support') or 'N/A'} | "
+                f"Confidence: {p.get('confidence_rating', '?')}/10 | "
+                f"Score: {round(d['score'], 3)}]\n"
+                f"{p.get('text_preview', '')}"
+            )
+        context_parts.append("=== DEMO FEEDBACK RECORDS ===\n" + "\n\n---\n\n".join(demo_lines))
+
+    context = "\n\n".join(context_parts)
+
     system_prompt = (
-        "You are a helpful assistant that answers questions based on the provided document context.\n"
+        "You are a helpful assistant that answers questions based on the provided context.\n"
+        "The context may include uploaded document sources and/or demo feedback records.\n"
         "Rules:\n"
         "- Answer ONLY from the context provided below\n"
-        "- If the answer is not in the context, say \"I could not find this in the uploaded documents\"\n"
+        "- If the answer is not in the context, say \"I could not find this in the uploaded documents or demo records\"\n"
         "- Be concise and clear\n"
-        "- Always mention which document/source your answer comes from\n"
-        "- If multiple documents are relevant, mention all of them"
+        "- For document answers: mention which document/source your answer comes from\n"
+        "- For demo answers: mention the customer name and demo period\n"
+        "- If multiple sources are relevant, mention all of them"
     )
     messages = [{"role": "system", "content": system_prompt}]
     for h in history[-6:]:
         messages.append({"role": h["role"], "content": h["content"]})
-    messages.append({"role": "user", "content": f"Context from documents:\n{context}\n\nQuestion: {question}"})
+    messages.append({"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"})
 
     r = requests.post(
         CHAT_URL,

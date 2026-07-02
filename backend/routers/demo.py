@@ -10,7 +10,7 @@ from config import EMBEDDING_DIM
 from services.auth import get_current_user, require_admin
 from services.database import get_conn, release_conn
 from services.embedding import get_single_embedding, get_qdrant
-from qdrant_client.models import Distance, VectorParams, PointStruct
+from qdrant_client.models import Distance, VectorParams, PointStruct, PointIdsList
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/demo", tags=["demo"])
@@ -264,7 +264,7 @@ def delete_demo(demo_id: int, user=Depends(require_admin)):
         try:
             get_qdrant().delete(
                 collection_name=DEMO_COLLECTION,
-                points_selector=[demo_id],
+                points_selector=PointIdsList(points=[demo_id]),
             )
         except Exception as e:
             logger.warning("Could not delete demo %d from Qdrant: %s", demo_id, e)
