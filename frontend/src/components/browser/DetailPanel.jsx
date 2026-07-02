@@ -109,9 +109,7 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
               onClick={() => onNavigate(item)}
             />
             <DetBtn icon={<Copy size={14} />} label="Copy Path" onClick={copyPath} />
-            {isAdmin && (
-              <DetBtn icon={<Trash2 size={14} />} label="Delete Folder" danger onClick={() => onDelete(item)} />
-            )}
+            <DetBtn icon={<Trash2 size={14} />} label="Delete Folder" danger onClick={() => onDelete(item)} />
           </>
         ) : (
           <>
@@ -128,16 +126,14 @@ export default function DetailPanel({ item, open, onClose, onDelete, onNavigate,
                 onClick={checkEmbedding}
               />
             )}
-            {isEmbeddable && isAdmin && (
+            {isEmbeddable && (
               <DetBtn
                 icon={<RefreshCw size={14} className={reEmbedding ? 'animate-spin' : ''} />}
                 label={reEmbedding ? 'Re-embedding…' : 'Re-embed Document'}
                 onClick={doReEmbed}
               />
             )}
-            {isAdmin && (
-              <DetBtn icon={<Trash2 size={14} />} label="Delete File" danger onClick={() => onDelete(item)} />
-            )}
+            <DetBtn icon={<Trash2 size={14} />} label="Delete File" danger onClick={() => onDelete(item)} />
           </>
         )}
       </div>

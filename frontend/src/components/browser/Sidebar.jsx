@@ -35,13 +35,15 @@ export default function Sidebar({ bucket, onRoot, onUpload, onNewFolder, onRefre
           desc="Ask questions on docs"
           active={location.pathname === '/chat'}
         />
-        <FeatureLink
-          to="/systems"
-          icon={<Server size={15} />}
-          label="Health"
-          desc="Monitor GitLab runners"
-          active={location.pathname === '/systems'}
-        />
+        {user?.role === 'admin' && (
+          <FeatureLink
+            to="/systems"
+            icon={<Server size={15} />}
+            label="Health"
+            desc="Monitor GitLab runners"
+            active={location.pathname === '/systems'}
+          />
+        )}
         <FeatureLink
           to="/links"
           icon={<Link2 size={15} />}

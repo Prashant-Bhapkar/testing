@@ -323,14 +323,12 @@ export default function FileBrowser() {
                 onClick={() => { setSelected(ctxMenu.item); setDetailOpen(true); setCtxMenu(null) }}
               />
             )}
-            {isAdmin && (
-              <CtxItem
-                icon={<Trash2 size={13} />}
-                label="Delete"
-                danger
-                onClick={() => { confirmDelete(ctxMenu.item); setCtxMenu(null) }}
-              />
-            )}
+            <CtxItem
+              icon={<Trash2 size={13} />}
+              label="Delete"
+              danger
+              onClick={() => { confirmDelete(ctxMenu.item); setCtxMenu(null) }}
+            />
           </div>
         </>
       )}

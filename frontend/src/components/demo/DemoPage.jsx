@@ -233,7 +233,7 @@ function DemoModal({ demo, onClose, onSaved }) {
 
 // ── View Modal ────────────────────────────────────────────────
 
-function ViewModal({ demo, isAdmin, onClose, onEdit }) {
+function ViewModal({ demo, onClose, onEdit }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-surface border border-border rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -247,11 +247,9 @@ function ViewModal({ demo, isAdmin, onClose, onEdit }) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <button onClick={() => { onClose(); onEdit(demo) }} className="text-muted hover:text-primary transition-colors" title="Edit">
-                <Pencil size={15} />
-              </button>
-            )}
+            <button onClick={() => { onClose(); onEdit(demo) }} className="text-muted hover:text-primary transition-colors" title="Edit">
+              <Pencil size={15} />
+            </button>
             <button onClick={onClose} className="text-muted hover:text-text transition-colors"><X size={18} /></button>
           </div>
         </div>
@@ -293,7 +291,7 @@ function VField({ label, value, multi }) {
 
 // ── Demo Card ─────────────────────────────────────────────────
 
-function DemoCard({ demo, isAdmin, onView, onEdit, onDelete }) {
+function DemoCard({ demo, onView, onEdit, onDelete }) {
   const preview = stripHtml(demo.what_showcased || '').slice(0, 180)
   const r = demo.confidence_rating
 
@@ -365,22 +363,20 @@ function DemoCard({ demo, isAdmin, onView, onEdit, onDelete }) {
         >
           <Eye size={12} /> View details
         </button>
-        {isAdmin && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onEdit(demo)}
-              className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors"
-            >
-              <Pencil size={12} /> Edit
-            </button>
-            <button
-              onClick={() => onDelete(demo)}
-              className="flex items-center gap-1.5 text-xs text-muted hover:text-danger transition-colors"
-            >
-              <Trash2 size={12} /> Delete
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => onEdit(demo)}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors"
+          >
+            <Pencil size={12} /> Edit
+          </button>
+          <button
+            onClick={() => onDelete(demo)}
+            className="flex items-center gap-1.5 text-xs text-muted hover:text-danger transition-colors"
+          >
+            <Trash2 size={12} /> Delete
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -396,7 +392,7 @@ function DemoSidebar() {
   const navLinks = [
     { to: '/',        icon: <FolderOpen size={15} />,    label: 'Docs',   desc: 'Browse & manage files' },
     { to: '/chat',    icon: <MessageSquare size={15} />, label: 'Search', desc: 'Ask questions on docs' },
-    { to: '/systems', icon: <Server size={15} />,        label: 'Health', desc: 'Monitor GitLab runners' },
+    ...(user?.role === 'admin' ? [{ to: '/systems', icon: <Server size={15} />, label: 'Health', desc: 'Monitor GitLab runners' }] : []),
     { to: '/links',   icon: <Link2 size={15} />,         label: 'Links',  desc: 'Saved hyperlinks' },
     { to: '/demo',    icon: <ClipboardList size={15} />, label: 'Demos',  desc: 'Demo feedback tracker' },
   ]
@@ -465,8 +461,6 @@ function DemoSidebar() {
 export default function DemoPage() {
   const toast = useToast()
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
-
   const [demos, setDemos]           = useState([])
   const [customers, setCustomers]   = useState([])
   const [loading, setLoading]       = useState(false)
@@ -520,14 +514,12 @@ export default function DemoPage() {
               {demos.length} record{demos.length !== 1 ? 's' : ''}{hasFilter ? ' (filtered)' : ''}
             </p>
           </div>
-          {isAdmin && (
-            <button
-              onClick={() => { setEditTarget(null); setShowAdd(true) }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus size={15} /> Add Demo
-            </button>
-          )}
+          <button
+            onClick={() => { setEditTarget(null); setShowAdd(true) }}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={15} /> Add Demo
+          </button>
         </div>
 
         {/* Filters */}
@@ -568,7 +560,7 @@ export default function DemoPage() {
               <p className="text-sm text-muted">
                 {hasFilter ? 'No demos match this filter' : 'No demo feedback yet'}
               </p>
-              {isAdmin && !hasFilter && (
+              {!hasFilter && (
                 <button onClick={() => setShowAdd(true)} className="mt-3 text-sm text-primary hover:underline">
                   Add the first one
                 </button>
@@ -580,7 +572,6 @@ export default function DemoPage() {
                 <DemoCard
                   key={d.id}
                   demo={d}
-                  isAdmin={isAdmin}
                   onView={setViewTarget}
                   onEdit={demo => { setEditTarget(demo); setShowAdd(false) }}
                   onDelete={handleDelete}
@@ -602,7 +593,6 @@ export default function DemoPage() {
       {viewTarget && (
         <ViewModal
           demo={viewTarget}
-          isAdmin={isAdmin}
           onClose={() => setViewTarget(null)}
           onEdit={demo => { setViewTarget(null); setEditTarget(demo) }}
         />

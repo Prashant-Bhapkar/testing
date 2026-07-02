@@ -168,7 +168,7 @@ def list_customers(user=Depends(get_current_user)):
 # ── Create ─────────────────────────────────────────────────────
 
 @router.post("")
-def create_demo(body: DemoIn, user=Depends(require_admin)):
+def create_demo(body: DemoIn, user=Depends(get_current_user)):
     conn = get_conn()
     cur = None
     try:
@@ -207,7 +207,7 @@ def create_demo(body: DemoIn, user=Depends(require_admin)):
 # ── Update ─────────────────────────────────────────────────────
 
 @router.put("/{demo_id}")
-def update_demo(demo_id: int, body: DemoIn, user=Depends(require_admin)):
+def update_demo(demo_id: int, body: DemoIn, user=Depends(get_current_user)):
     conn = get_conn()
     cur = None
     try:
@@ -251,7 +251,7 @@ def update_demo(demo_id: int, body: DemoIn, user=Depends(require_admin)):
 # ── Delete ─────────────────────────────────────────────────────
 
 @router.delete("/{demo_id}")
-def delete_demo(demo_id: int, user=Depends(require_admin)):
+def delete_demo(demo_id: int, user=Depends(get_current_user)):
     conn = get_conn()
     cur = None
     try:

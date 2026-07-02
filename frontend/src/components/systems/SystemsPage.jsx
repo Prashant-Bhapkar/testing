@@ -15,8 +15,6 @@ import { ThemeToggle } from '../../context/ThemeContext'
 export default function SystemsPage() {
   const toast = useToast()
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
-
   const [systems, setSystems]         = useState([])
   const [loading, setLoading]         = useState(false)
   const [showAdd, setShowAdd]         = useState(false)
@@ -95,14 +93,12 @@ export default function SystemsPage() {
           <Server size={18} className="text-primary" />
           <span className="text-base font-bold">System Health</span>
           <div className="flex-1" />
-          {isAdmin && (
-            <button
-              onClick={() => setShowAdd(true)}
-              className="btn-primary flex items-center gap-1.5 text-sm"
-            >
-              <Plus size={14} /> Add System
-            </button>
-          )}
+          <button
+            onClick={() => setShowAdd(true)}
+            className="btn-primary flex items-center gap-1.5 text-sm"
+          >
+            <Plus size={14} /> Add System
+          </button>
         </div>
 
         {/* Content */}
@@ -115,11 +111,9 @@ export default function SystemsPage() {
             <div className="flex flex-col items-center justify-center h-40 gap-2 text-muted">
               <Server size={36} className="opacity-30" />
               <span className="text-sm">No systems added yet</span>
-              {isAdmin && (
-                <button onClick={() => setShowAdd(true)} className="btn-primary text-sm mt-1 flex items-center gap-1.5">
-                  <Plus size={13} /> Add your first system
-                </button>
-              )}
+              <button onClick={() => setShowAdd(true)} className="btn-primary text-sm mt-1 flex items-center gap-1.5">
+                <Plus size={13} /> Add your first system
+              </button>
             </div>
           ) : (
             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))' }}>
@@ -128,7 +122,6 @@ export default function SystemsPage() {
                   key={sys.id}
                   sys={sys}
                   status={statuses[sys.id]}
-                  isAdmin={isAdmin}
                   onCheck={() => checkSystem(sys.id)}
                   onRestart={() => restartRunner(sys.id)}
                   onDelete={() => deleteSystem(sys.id)}
@@ -165,7 +158,7 @@ export default function SystemsPage() {
 
 // ── System Card ────────────────────────────────────────────────
 
-function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerminal, onEdit }) {
+function SystemCard({ sys, status, onCheck, onRestart, onDelete, onTerminal, onEdit }) {
   const tags = sys.runner_tags ? sys.runner_tags.split(',').map(t => t.trim()).filter(Boolean) : []
 
   return (
@@ -182,16 +175,12 @@ function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerm
           <button onClick={onTerminal} title="Open SSH terminal" className="text-muted hover:text-primary transition-colors">
             <Terminal size={14} />
           </button>
-          {isAdmin && (
-            <>
-              <button onClick={onEdit} title="Edit system" className="text-muted hover:text-warning transition-colors">
-                <Pencil size={14} />
-              </button>
-              <button onClick={onDelete} title="Delete system" className="text-muted hover:text-danger transition-colors">
-                <Trash2 size={14} />
-              </button>
-            </>
-          )}
+          <button onClick={onEdit} title="Edit system" className="text-muted hover:text-warning transition-colors">
+            <Pencil size={14} />
+          </button>
+          <button onClick={onDelete} title="Delete system" className="text-muted hover:text-danger transition-colors">
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
 
@@ -240,16 +229,14 @@ function SystemCard({ sys, status, isAdmin, onCheck, onRestart, onDelete, onTerm
           <RefreshCw size={12} className={status?.checking ? 'animate-spin' : ''} />
           Check Now
         </button>
-        {isAdmin && (
-          <button
-            onClick={onRestart}
-            disabled={status?.restarting || status?.checking}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary/40 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
-          >
-            <RotateCcw size={12} className={status?.restarting ? 'animate-spin' : ''} />
-            {status?.restarting ? 'Restarting…' : 'Restart Runner'}
-          </button>
-        )}
+        <button
+          onClick={onRestart}
+          disabled={status?.restarting || status?.checking}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-primary/40 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+        >
+          <RotateCcw size={12} className={status?.restarting ? 'animate-spin' : ''} />
+          {status?.restarting ? 'Restarting…' : 'Restart Runner'}
+        </button>
       </div>
     </div>
   )

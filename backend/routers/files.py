@@ -171,7 +171,7 @@ def preview(path: str, user: dict = Depends(get_current_user)):
 
 
 @router.delete("/delete")
-def delete(path: str, admin: dict = Depends(require_admin)):
+def delete(path: str, admin: dict = Depends(get_current_user)):
     try:
         filename = Path(path).name
         ext      = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -189,7 +189,7 @@ def delete(path: str, admin: dict = Depends(require_admin)):
 
 
 @router.delete("/delete-folder")
-def delete_folder(path: str, admin: dict = Depends(require_admin)):
+def delete_folder(path: str, admin: dict = Depends(get_current_user)):
     try:
         deleted = storage.delete_folder_all(path)
         cleaned = []
@@ -237,7 +237,7 @@ class ReEmbedRequest(BaseModel):
 
 
 @router.post("/re-embed")
-def re_embed(body: ReEmbedRequest, admin: dict = Depends(require_admin)):
+def re_embed(body: ReEmbedRequest, admin: dict = Depends(get_current_user)):
     try:
         filename = Path(body.path).name
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""

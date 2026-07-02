@@ -286,7 +286,9 @@ function LinksSidebar() {
         <div className="text-[11px] uppercase tracking-widest text-muted px-1.5 mb-2">Features</div>
         <NavLink to="/"        icon={<FolderOpen size={15} />}    label="Docs"    desc="Browse & manage files"   active={location.pathname === '/'} />
         <NavLink to="/chat"    icon={<MessageSquare size={15} />} label="Search"  desc="Ask questions on docs"   active={location.pathname === '/chat'} />
-        <NavLink to="/systems" icon={<Server size={15} />}        label="Health"  desc="Monitor GitLab runners"  active={location.pathname === '/systems'} />
+        {user?.role === 'admin' && (
+          <NavLink to="/systems" icon={<Server size={15} />} label="Health" desc="Monitor GitLab runners" active={location.pathname === '/systems'} />
+        )}
         <NavLink to="/links"   icon={<Link2 size={15} />}         label="Links"   desc="Saved hyperlinks"        active={location.pathname === '/links'} />
         <NavLink to="/demo"    icon={<ClipboardList size={15} />} label="Demos"   desc="Demo feedback tracker"   active={location.pathname === '/demo'} />
         {user?.role === 'admin' && (

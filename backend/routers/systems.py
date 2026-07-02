@@ -42,7 +42,7 @@ class SystemUpdate(BaseModel):
 # ── List ───────────────────────────────────────────────────────
 
 @router.get("")
-def list_systems(user=Depends(get_current_user)):
+def list_systems(user=Depends(require_admin)):
     conn = get_conn()
     try:
         cur = conn.cursor()
@@ -153,7 +153,7 @@ def delete_system(system_id: int, user=Depends(require_admin)):
 # ── Check status ───────────────────────────────────────────────
 
 @router.get("/{system_id}/check")
-def check_system(system_id: int, user=Depends(get_current_user)):
+def check_system(system_id: int, user=Depends(require_admin)):
     conn = get_conn()
     try:
         cur = conn.cursor()
@@ -206,7 +206,7 @@ def restart_system_runner(system_id: int, user=Depends(require_admin)):
 # ── Open SSH terminal ──────────────────────────────────────────
 
 @router.post("/{system_id}/terminal")
-def open_terminal(system_id: int, user=Depends(get_current_user)):
+def open_terminal(system_id: int, user=Depends(require_admin)):
     conn = get_conn()
     try:
         cur = conn.cursor()

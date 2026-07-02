@@ -32,7 +32,7 @@ export default function App() {
             <Route path="/login"   element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/"       element={<ProtectedRoute><FileBrowser /></ProtectedRoute>} />
             <Route path="/chat"   element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-            <Route path="/systems" element={<ProtectedRoute><SystemsPage /></ProtectedRoute>} />
+            <Route path="/systems" element={<ProtectedRoute adminOnly><SystemsPage /></ProtectedRoute>} />
             <Route path="/links"  element={<ProtectedRoute><LinksPage /></ProtectedRoute>} />
             <Route path="/demo"   element={<ProtectedRoute><DemoPage /></ProtectedRoute>} />
             <Route path="/admin"  element={<ProtectedRoute adminOnly><AdminPanel /></ProtectedRoute>} />
