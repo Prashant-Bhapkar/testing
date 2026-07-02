@@ -170,6 +170,7 @@ def list_customers(user=Depends(get_current_user)):
 @router.post("")
 def create_demo(body: DemoIn, user=Depends(require_admin)):
     conn = get_conn()
+    cur = None
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -186,13 +187,20 @@ def create_demo(body: DemoIn, user=Depends(require_admin)):
         new_id = cur.fetchone()[0]
         conn.commit()
         logger.info("Demo created: id=%d customer=%s by %s", new_id, body.customer_name, user["sub"])
-        _upsert_qdrant(new_id, body.dict())
+        _upsert_qdrant(new_id, body.model_dump())
         return {"id": new_id, "message": "Demo feedback saved"}
     except Exception as e:
-        conn.rollback()
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         raise HTTPException(status_code=400, detail=str(e))
     finally:
-        cur.close()
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
         release_conn(conn)
 
 
@@ -201,6 +209,7 @@ def create_demo(body: DemoIn, user=Depends(require_admin)):
 @router.put("/{demo_id}")
 def update_demo(demo_id: int, body: DemoIn, user=Depends(require_admin)):
     conn = get_conn()
+    cur = None
     try:
         cur = conn.cursor()
         cur.execute("""
@@ -220,15 +229,22 @@ def update_demo(demo_id: int, body: DemoIn, user=Depends(require_admin)):
             raise HTTPException(status_code=404, detail="Demo not found")
         conn.commit()
         logger.info("Demo updated: id=%d by %s", demo_id, user["sub"])
-        _upsert_qdrant(demo_id, body.dict())
+        _upsert_qdrant(demo_id, body.model_dump())
         return {"message": "Demo feedback updated"}
     except HTTPException:
         raise
     except Exception as e:
-        conn.rollback()
+        try:
+            conn.rollback()
+        except Exception:
+            pass
         raise HTTPException(status_code=400, detail=str(e))
     finally:
-        cur.close()
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
         release_conn(conn)
 
 
@@ -237,6 +253,7 @@ def update_demo(demo_id: int, body: DemoIn, user=Depends(require_admin)):
 @router.delete("/{demo_id}")
 def delete_demo(demo_id: int, user=Depends(require_admin)):
     conn = get_conn()
+    cur = None
     try:
         cur = conn.cursor()
         cur.execute("DELETE FROM demo_feedback WHERE id=%s RETURNING id", (demo_id,))
@@ -252,6 +269,18 @@ def delete_demo(demo_id: int, user=Depends(require_admin)):
         except Exception as e:
             logger.warning("Could not delete demo %d from Qdrant: %s", demo_id, e)
         return {"message": "Demo feedback deleted"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise HTTPException(status_code=400, detail=str(e))
     finally:
-        cur.close()
+        if cur is not None:
+            try:
+                cur.close()
+            except Exception:
+                pass
         release_conn(conn)

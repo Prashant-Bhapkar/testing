@@ -4,6 +4,7 @@ import {
   ClipboardList, Plus, Pencil, Trash2, Eye, X,
   Bold, Italic, List, ListOrdered,
   FolderOpen, MessageSquare, Server, Link2, ShieldCheck, LogOut,
+  CalendarDays, UserRound, Wrench, ArrowRight,
 } from 'lucide-react'
 import { api } from '../../api'
 import { useAuth } from '../../context/AuthContext'
@@ -292,42 +293,94 @@ function VField({ label, value, multi }) {
 // ── Demo Card ─────────────────────────────────────────────────
 
 function DemoCard({ demo, isAdmin, onView, onEdit, onDelete }) {
-  const preview = stripHtml(demo.what_showcased).slice(0, 130)
+  const preview = stripHtml(demo.what_showcased || '').slice(0, 180)
+  const r = demo.confidence_rating
+
+  const accentBorder = !r ? 'border-l-border' : r >= 7 ? 'border-l-green-500' : r >= 4 ? 'border-l-yellow-500' : 'border-l-red-500'
+  const ratingBg = !r ? 'bg-card text-muted' : r >= 7 ? 'bg-green-500/15 text-green-400' : r >= 4 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
 
   return (
     <div
-      className="bg-card border border-border rounded-xl p-4 hover:border-primary/40 transition-all group cursor-pointer"
+      className={`bg-surface border border-border border-l-4 ${accentBorder} rounded-xl flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer`}
       onClick={() => onView(demo)}
     >
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-sm font-bold text-text">{demo.customer_name}</span>
-        <div className="flex items-center gap-1">
-          {demo.confidence_rating && (
-            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ratingColor(demo.confidence_rating)}`}>
-              {demo.confidence_rating}/10
-            </span>
-          )}
-          <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
-            <button onClick={() => onView(demo)} className="p-1 rounded hover:bg-surface text-muted hover:text-primary transition-colors" title="View"><Eye size={13} /></button>
-            {isAdmin && <>
-              <button onClick={() => onEdit(demo)} className="p-1 rounded hover:bg-surface text-muted hover:text-primary transition-colors" title="Edit"><Pencil size={13} /></button>
-              <button onClick={() => onDelete(demo)} className="p-1 rounded hover:bg-surface text-muted hover:text-danger transition-colors" title="Delete"><Trash2 size={13} /></button>
-            </>}
+      {/* Header: name + rating */}
+      <div className="p-4 pb-3 flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold text-text truncate">{demo.customer_name}</div>
+          <div className="flex items-center gap-1 text-xs text-muted mt-1">
+            <CalendarDays size={11} className="shrink-0" />
+            <span>{formatDate(demo.demo_start_date)}</span>
+            <ArrowRight size={10} className="shrink-0 opacity-50" />
+            <span>{formatDate(demo.demo_end_date)}</span>
           </div>
         </div>
+        {r ? (
+          <div className={`shrink-0 rounded-lg px-2.5 py-1.5 flex flex-col items-center ${ratingBg}`}>
+            <span className="text-base font-black leading-none">{r}</span>
+            <span className="text-[10px] font-medium opacity-60 leading-tight">/10</span>
+          </div>
+        ) : (
+          <div className="shrink-0 rounded-lg px-2.5 py-1.5 bg-card border border-border flex flex-col items-center">
+            <span className="text-base font-black leading-none text-muted">—</span>
+            <span className="text-[10px] font-medium opacity-60 leading-tight">/10</span>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted mb-2">
-        <span>{formatDate(demo.demo_start_date)} — {formatDate(demo.demo_end_date)}</span>
-        <span>By {demo.given_by}</span>
-        {demo.developer_support && <span>Dev: {demo.developer_support}</span>}
+      {/* People */}
+      <div className="px-4 pb-3 flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 text-xs">
+          <UserRound size={11} className="text-muted shrink-0" />
+          <span className="text-muted font-medium w-12 shrink-0">By</span>
+          <span className="text-text truncate">{demo.given_by}</span>
+        </div>
+        {demo.developer_support && (
+          <div className="flex items-center gap-2 text-xs">
+            <Wrench size={11} className="text-muted shrink-0" />
+            <span className="text-muted font-medium w-12 shrink-0">Dev</span>
+            <span className="text-subtle truncate">{demo.developer_support}</span>
+          </div>
+        )}
       </div>
 
+      {/* Showcased preview */}
       {preview && (
-        <p className="text-xs text-subtle leading-relaxed line-clamp-2">
-          {preview}{stripHtml(demo.what_showcased).length > 130 ? '…' : ''}
-        </p>
+        <div className="px-4 pb-3 flex-1">
+          <div className="bg-card rounded-lg px-3 py-2.5 text-xs text-subtle leading-relaxed line-clamp-3">
+            {preview}{stripHtml(demo.what_showcased || '').length > 180 ? '…' : ''}
+          </div>
+        </div>
       )}
+
+      {/* Footer actions — always visible */}
+      <div
+        className="px-4 py-2.5 border-t border-border/60 flex items-center justify-between mt-auto"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={() => onView(demo)}
+          className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors"
+        >
+          <Eye size={12} /> View details
+        </button>
+        {isAdmin && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onEdit(demo)}
+              className="flex items-center gap-1.5 text-xs text-muted hover:text-primary transition-colors"
+            >
+              <Pencil size={12} /> Edit
+            </button>
+            <button
+              onClick={() => onDelete(demo)}
+              className="flex items-center gap-1.5 text-xs text-muted hover:text-danger transition-colors"
+            >
+              <Trash2 size={12} /> Delete
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
