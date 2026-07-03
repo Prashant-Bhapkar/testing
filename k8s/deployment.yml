@@ -5,6 +5,8 @@
 #  Before deploying, create the K8s secret manually (once):
 #    kubectl create secret generic appeng-secret \
 #      --from-literal=OPENAI_API_KEY="..." \
+#      --from-literal=MINIO_ACCESS_KEY="..." \
+#      --from-literal=MINIO_SECRET_KEY="..." \
 #      --from-literal=POSTGRES_USER="..." \
 #      --from-literal=POSTGRES_PASSWORD="..." \
 #      --from-literal=JWT_SECRET="$(openssl rand -hex 32)"
@@ -49,10 +51,6 @@ spec:
           env:
             - name: MINIO_ENDPOINT
               value: "XXXXXXXX"       # e.g. minio.example.com:9000
-            - name: MINIO_ACCESS_KEY
-              value: "XXXXXXXX"
-            - name: MINIO_SECRET_KEY
-              value: "XXXXXXXX"
             - name: MINIO_BUCKET
               value: "XXXXXXXX"
             - name: MINIO_SECURE
