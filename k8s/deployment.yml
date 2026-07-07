@@ -21,8 +21,7 @@
 #      --from-literal=POSTGRES_PASSWORD="..." \
 #      --from-literal=POSTGRES_DB="..." \
 #      --from-literal=JWT_SECRET="your-existing-jwt-secret" \
-#      --from-literal=JWT_EXPIRE_MINUTES="480" \
-#      --from-literal=ALLOWED_ORIGINS="https://your-domain.com"
+#      --from-literal=JWT_EXPIRE_MINUTES="480"
 #
 #  Apply:
 #    kubectl apply -f deployment.yml -n app-engg
