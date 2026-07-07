@@ -4,15 +4,28 @@
 #
 #  Before deploying, create the K8s secret manually (once):
 #    kubectl create secret generic appeng-secret -n app-engg \
-#      --from-literal=OPENAI_API_KEY="..." \
+#      --from-literal=MINIO_ENDPOINT="..." \
 #      --from-literal=MINIO_ACCESS_KEY="..." \
 #      --from-literal=MINIO_SECRET_KEY="..." \
+#      --from-literal=MINIO_BUCKET="..." \
+#      --from-literal=MINIO_SECURE="true" \
+#      --from-literal=QDRANT_URL="..." \
+#      --from-literal=AI_BASE_URL="..." \
+#      --from-literal=OPENAI_API_KEY="..." \
+#      --from-literal=EMBEDDING_MODEL="..." \
+#      --from-literal=CHAT_MODEL="..." \
+#      --from-literal=COLLECTION_NAME="documents" \
+#      --from-literal=POSTGRES_HOST="..." \
+#      --from-literal=POSTGRES_PORT="5432" \
 #      --from-literal=POSTGRES_USER="..." \
 #      --from-literal=POSTGRES_PASSWORD="..." \
-#      --from-literal=JWT_SECRET="your-existing-jwt-secret"
+#      --from-literal=POSTGRES_DB="..." \
+#      --from-literal=JWT_SECRET="your-existing-jwt-secret" \
+#      --from-literal=JWT_EXPIRE_MINUTES="480" \
+#      --from-literal=ALLOWED_ORIGINS="https://your-domain.com"
 #
 #  Apply:
-#    kubectl apply -f deployment.yml
+#    kubectl apply -f deployment.yml -n app-engg
 # ============================================================
 
 # ── Backend Deployment ───────────────────────────────────────
@@ -43,38 +56,10 @@ spec:
           ports:
             - containerPort: 8000
               protocol: TCP
-          # Sensitive values pulled from K8s secret
+          # All config injected from K8s secret
           envFrom:
             - secretRef:
                 name: appeng-secret
-          # Non-sensitive config — fill these in
-          env:
-            - name: MINIO_ENDPOINT
-              value: "XXXXXXXX"       # e.g. minio.example.com:9000
-            - name: MINIO_BUCKET
-              value: "XXXXXXXX"
-            - name: MINIO_SECURE
-              value: "true"           # false if http / self-signed
-            - name: QDRANT_URL
-              value: "XXXXXXXX"       # e.g. http://qdrant-service:6333
-            - name: AI_BASE_URL
-              value: "XXXXXXXX"       # e.g. http://ollama-service:11434
-            - name: EMBEDDING_MODEL
-              value: "XXXXXXXX"       # e.g. nomic-embed-text
-            - name: CHAT_MODEL
-              value: "XXXXXXXX"       # e.g. llama3
-            - name: COLLECTION_NAME
-              value: "documents"
-            - name: POSTGRES_HOST
-              value: "XXXXXXXX"       # e.g. postgres-service or external IP
-            - name: POSTGRES_PORT
-              value: "5432"
-            - name: POSTGRES_DB
-              value: "XXXXXXXX"       # e.g. dociq
-            - name: JWT_EXPIRE_MINUTES
-              value: "480"
-            - name: ALLOWED_ORIGINS
-              value: "https://XXXXXXXX"  # your app domain
           readinessProbe:
             httpGet:
               path: /api/health
