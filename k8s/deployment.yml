@@ -3,13 +3,13 @@
 #  Fill every XXXXXXXX placeholder before applying.
 #
 #  Before deploying, create the K8s secret manually (once):
-#    kubectl create secret generic appeng-secret \
+#    kubectl create secret generic appeng-secret -n app-engg \
 #      --from-literal=OPENAI_API_KEY="..." \
 #      --from-literal=MINIO_ACCESS_KEY="..." \
 #      --from-literal=MINIO_SECRET_KEY="..." \
 #      --from-literal=POSTGRES_USER="..." \
 #      --from-literal=POSTGRES_PASSWORD="..." \
-#      --from-literal=JWT_SECRET="$(openssl rand -hex 32)"
+#      --from-literal=JWT_SECRET="your-existing-jwt-secret"
 #
 #  Apply:
 #    kubectl apply -f deployment.yml
